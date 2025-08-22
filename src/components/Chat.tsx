@@ -53,7 +53,20 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
           sender: "agent",
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, agentMessage]);
+        setMessages((prev) => {
+          const newMessages = [...prev, agentMessage];
+          
+          // セッションも更新してローカルストレージに保存
+          if (session) {
+            const updatedSession: ChatSession = {
+              ...session,
+              messages: newMessages,
+            };
+            onSessionUpdate(updatedSession);
+          }
+          
+          return newMessages;
+        });
         setIsLoading(false);
       },
       (error) => {
@@ -120,7 +133,20 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         sender: "agent",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => {
+        const newMessages = [...prev, errorMessage];
+        
+        // エラーメッセージもセッションに保存
+        if (session) {
+          const updatedSession: ChatSession = {
+            ...session,
+            messages: newMessages,
+          };
+          onSessionUpdate(updatedSession);
+        }
+        
+        return newMessages;
+      });
       setIsLoading(false);
     }
   };
