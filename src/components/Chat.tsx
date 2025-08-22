@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { Message, ChatSession } from '@/types/chat'
-import { chatApi } from '@/lib/api'
+import { WebSocketClient } from '@/lib/api'
 import MessageBubble from './MessageBubble'
 import ChatInput from './ChatInput'
 
@@ -16,6 +16,8 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [conversationId, setConversationId] = useState<string | undefined>(session?.id)
+  const [wsClient, setWsClient] = useState<WebSocketClient | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -32,8 +34,46 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
     }
   }, [session])
 
+  useEffect(() => {
+    const clientId = Math.floor(Math.random() * 10000)
+    
+    const client = new WebSocketClient(
+      clientId,
+      (message) => {
+        const agentMessage: Message = {
+          id: Date.now().toString(),
+          content: message.message,
+          sender: 'agent',
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, agentMessage])
+        setIsLoading(false)
+      },
+      (error) => {
+        console.error('WebSocket error:', error)
+        setIsConnected(false)
+      },
+      () => {
+        setIsConnected(false)
+      }
+    )
+
+    client.connect()
+      .then(() => {
+        setIsConnected(true)
+        setWsClient(client)
+      })
+      .catch((error) => {
+        console.error('Failed to connect WebSocket:', error)
+      })
+
+    return () => {
+      client.disconnect()
+    }
+  }, [])
+
   const handleSendMessage = async (content: string) => {
-    if (!content.trim()) return
+    if (!content.trim() || !wsClient || !isConnected) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -46,27 +86,16 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
     setIsLoading(true)
 
     try {
-      const response = await chatApi.sendMessage({
-        message: content.trim(),
-        conversation_id: conversationId
-      })
-
-      const agentMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: response.response,
-        sender: 'agent',
-        timestamp: new Date()
-      }
-
-      setMessages(prev => [...prev, agentMessage])
+      wsClient.sendMessage(content.trim())
       
+      const sessionId = conversationId || Date.now().toString()
       if (!conversationId) {
-        setConversationId(response.conversation_id)
+        setConversationId(sessionId)
       }
 
       const updatedSession: ChatSession = {
-        id: response.conversation_id,
-        messages: [...messages, userMessage, agentMessage],
+        id: sessionId,
+        messages: [...messages, userMessage],
         title: content.slice(0, 50) + (content.length > 50 ? '...' : ''),
         createdAt: session?.createdAt || new Date()
       }
@@ -77,18 +106,28 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
       console.error('Failed to send message:', error)
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: 'エラーが発生しました。もう一度お試しください。',
+        content: 'エラーが発生しました。WebSocket接続を確認してください。',
         sender: 'agent',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
-    } finally {
       setIsLoading(false)
     }
   }
 
   return (
     <div className="flex flex-col h-full">
+      <div className="p-2 bg-gray-50 border-b">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">PowerPoint資料作成AI</span>
+          <div className="flex items-center">
+            <div className={`w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-xs text-gray-600">
+              {isConnected ? '接続済み' : '未接続'}
+            </span>
+          </div>
+        </div>
+      </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="flex items-center justify-center h-full">
@@ -119,7 +158,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         <div ref={messagesEndRef} />
       </div>
       
-      <ChatInput onSendMessage={handleSendMessage} disabled={isLoading} />
+      <ChatInput onSendMessage={handleSendMessage} disabled={isLoading || !isConnected} />
     </div>
   )
 }
