@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Highlight.js のスタイル */
+@import 'highlight.js/styles/github.css';
+
 * {
   box-sizing: border-box;
   padding: 0;
