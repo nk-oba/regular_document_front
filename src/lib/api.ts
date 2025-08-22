@@ -68,11 +68,12 @@ export class WebSocketClient {
     });
   }
 
-  sendMessage(message: string): void {
+  sendMessage(message: string, selectedAgent?: string): void {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       const data = {
         message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        selectedAgent: selectedAgent || 'document_creating_agent'
       };
       this.socket.send(JSON.stringify(data));
     } else {

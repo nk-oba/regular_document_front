@@ -8,7 +8,7 @@ interface FileDownloadProps {
 
 const FileDownload: React.FC<FileDownloadProps> = ({ content }) => {
   const downloadPattern = /\[(.+\.pptx?)\]\((.*?)\)/g
-  const matches = [...content.matchAll(downloadPattern)]
+  const matches = Array.from(content.matchAll(downloadPattern))
 
   if (matches.length === 0) {
     return null

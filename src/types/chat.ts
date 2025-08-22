@@ -10,6 +10,7 @@ export interface ChatSession {
   messages: Message[]
   title: string
   createdAt: Date
+  selectedAgent?: string
 }
 
 export interface MessageRequest {

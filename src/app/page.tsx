@@ -65,11 +65,9 @@ const HomePage: React.FC = () => {
 
       <div className="flex-1 flex flex-col">
         <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <h1 className="text-xl font-bold text-gray-800">
-            定例資料自動作成エージェント
-          </h1>
+          <h1 className="text-xl font-bold text-gray-800">AIエージェント</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Vertex AIを活用した資料作成支援システム
+            Vertex AIを活用したエージェントシステム
           </p>
         </header>
 
