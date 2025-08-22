@@ -32,7 +32,11 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         const baseURL =
           process.env.AGENTS_URL?.replace("agents:8000", "localhost:8000") ||
           "http://localhost:8000";
-        const response = await fetch(`${baseURL}/list_apps`);
+        const response = await fetch(`${baseURL}/list-apps`, {
+          headers: {
+            accept: "application/json",
+          },
+        });
 
         if (response.ok) {
           const apps = await response.json();
@@ -68,12 +72,10 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     },
   ];
 
+  // TODO: Wrap this function to get the agent name from the agent id
   const getAgentDisplayName = (agentId: string): string => {
     const displayNames: { [key: string]: string } = {
       document_creating_agent: "定例資作成エージェント",
-      ad_analyzer_agent: "広告分析エージェント",
-      slide_agent: "スライド作成エージェント",
-      playwright_agent: "Webスクレイピングエージェント",
     };
     return displayNames[agentId] || agentId;
   };
@@ -81,9 +83,6 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const getAgentDescription = (agentId: string): string => {
     const descriptions: { [key: string]: string } = {
       document_creating_agent: "広告運用の報告資料を作成するメインエージェント",
-      ad_analyzer_agent: "広告データの分析を専門とするエージェント",
-      slide_agent: "PowerPointスライドの作成を担当するエージェント",
-      playwright_agent: "Webからのデータ収集を行うエージェント",
     };
     return descriptions[agentId] || `${agentId}エージェント`;
   };

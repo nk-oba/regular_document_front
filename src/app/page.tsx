@@ -33,7 +33,21 @@ const HomePage: React.FC = () => {
   }, [sessions]);
 
   const handleNewChat = () => {
-    setCurrentSession(null);
+    // 新規セッションを作成
+    const newSessionId = `session_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const newSession: ChatSession = {
+      id: newSessionId,
+      messages: [],
+      title: '新しいチャット',
+      createdAt: new Date(),
+      selectedAgent: 'document_creating_agent'
+    };
+    
+    // 新規セッションを現在のセッションに設定
+    setCurrentSession(newSession);
+    
+    // セッション一覧にも追加（空のメッセージ配列で）
+    setSessions(prev => [newSession, ...prev]);
   };
 
   const handleSessionSelect = (session: ChatSession) => {

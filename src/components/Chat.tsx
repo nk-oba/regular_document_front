@@ -96,7 +96,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
     try {
       wsClient.sendMessage(content.trim(), selectedAgent);
 
-      const sessionId = conversationId || Date.now().toString();
+      const sessionId = conversationId || session?.id || Date.now().toString();
       if (!conversationId) {
         setConversationId(sessionId);
       }
@@ -104,7 +104,9 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
       const updatedSession: ChatSession = {
         id: sessionId,
         messages: [...messages, userMessage],
-        title: content.slice(0, 50) + (content.length > 50 ? "..." : ""),
+        title: session?.title === '新しいチャット' || !session?.title 
+          ? content.slice(0, 50) + (content.length > 50 ? "..." : "")
+          : session.title,
         createdAt: session?.createdAt || new Date(),
         selectedAgent,
       };
@@ -162,11 +164,18 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         {messages.length === 0 && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-gray-500">
-              <h2 className="text-2xl font-bold mb-4"></h2>
+              <h2 className="text-2xl font-bold mb-4">
+                {session ? '新しいチャット' : 'AIエージェント'}
+              </h2>
               <p>メッセージを送信して会話を開始してください</p>
               <p className="text-sm mt-2">
                 例: 「売上分析のプレゼン資料を作成してください」
               </p>
+              {session?.selectedAgent && (
+                <p className="text-sm mt-2 text-blue-600">
+                  使用中エージェント: {session.selectedAgent}
+                </p>
+              )}
             </div>
           </div>
         )}
