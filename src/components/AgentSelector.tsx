@@ -30,8 +30,10 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       setLoading(true);
       try {
         const baseURL =
-          process.env.AGENTS_URL?.replace("agents:8000", "localhost:8000") ||
-          "http://localhost:8000";
+          import.meta.env.VITE_AGENTS_URL?.replace(
+            "agents:8000",
+            "localhost:8000"
+          ) || "http://localhost:8000";
         const response = await fetch(`${baseURL}/list-apps`, {
           headers: {
             accept: "application/json",

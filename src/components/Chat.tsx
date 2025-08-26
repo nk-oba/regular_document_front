@@ -38,11 +38,9 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
       setMessages(session.messages);
       setConversationId(session.id);
       setSelectedAgent(session.selectedAgent || "document_creating_agent");
-      
-      // ローディング状態をリセット（履歴から復元した場合）
+
       setIsLoading(false);
     } else {
-      // セッションがnullの場合は初期状態に戻す
       setMessages([]);
       setConversationId(undefined);
       setSelectedAgent("document_creating_agent");
@@ -64,8 +62,6 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         };
         setMessages((prev) => {
           const newMessages = [...prev, agentMessage];
-          
-          // セッションも更新してローカルストレージに保存
           if (session) {
             const updatedSession: ChatSession = {
               ...session,
@@ -73,7 +69,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
             };
             onSessionUpdate(updatedSession);
           }
-          
+
           return newMessages;
         });
         setIsLoading(false);
@@ -125,9 +121,10 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
       const updatedSession: ChatSession = {
         id: sessionId,
         messages: [...messages, userMessage],
-        title: session?.title === '新しいチャット' || !session?.title 
-          ? content.slice(0, 50) + (content.length > 50 ? "..." : "")
-          : session.title,
+        title:
+          session?.title === "新しいチャット" || !session?.title
+            ? content.slice(0, 50) + (content.length > 50 ? "..." : "")
+            : session.title,
         createdAt: session?.createdAt || new Date(),
         selectedAgent,
       };
@@ -143,7 +140,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
       };
       setMessages((prev) => {
         const newMessages = [...prev, errorMessage];
-        
+
         // エラーメッセージもセッションに保存
         if (session) {
           const updatedSession: ChatSession = {
@@ -152,7 +149,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
           };
           onSessionUpdate(updatedSession);
         }
-        
+
         return newMessages;
       });
       setIsLoading(false);
@@ -199,7 +196,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-gray-500">
               <h2 className="text-2xl font-bold mb-4">
-                {session ? '新しいチャット' : 'AIエージェント'}
+                {session ? "新しいチャット" : "AIエージェント"}
               </h2>
               <p>メッセージを送信して会話を開始してください</p>
               <p className="text-sm mt-2">
