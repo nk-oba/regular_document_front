@@ -1,7 +1,7 @@
 import axios from "axios";
 import { MessageRequest, MessageResponse } from "@/types/chat";
 
-const baseURL = process.env.AGENTS_URL;
+const baseURL = import.meta.env.VITE_AGENTS_URL || 'http://127.0.0.1:8000';
 console.log("BASE_URL");
 console.log(baseURL);
 
@@ -68,12 +68,13 @@ export class WebSocketClient {
     });
   }
 
-  sendMessage(message: string, selectedAgent?: string): void {
+  sendMessage(message: string, selectedAgent?: string, sessionId?: string): void {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       const data = {
         message,
         timestamp: new Date().toISOString(),
-        selectedAgent: selectedAgent || 'document_creating_agent'
+        selectedAgent: selectedAgent || 'document_creating_agent',
+        sessionId: sessionId
       };
       this.socket.send(JSON.stringify(data));
     } else {

@@ -38,6 +38,15 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
       setMessages(session.messages);
       setConversationId(session.id);
       setSelectedAgent(session.selectedAgent || "document_creating_agent");
+      
+      // ローディング状態をリセット（履歴から復元した場合）
+      setIsLoading(false);
+    } else {
+      // セッションがnullの場合は初期状態に戻す
+      setMessages([]);
+      setConversationId(undefined);
+      setSelectedAgent("document_creating_agent");
+      setIsLoading(false);
     }
   }, [session]);
 
@@ -107,9 +116,8 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
     setIsLoading(true);
 
     try {
-      wsClient.sendMessage(content.trim(), selectedAgent);
-
       const sessionId = conversationId || session?.id || Date.now().toString();
+      wsClient.sendMessage(content.trim(), selectedAgent, sessionId);
       if (!conversationId) {
         setConversationId(sessionId);
       }

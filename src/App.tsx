@@ -1,11 +1,9 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
-import { ChatSession, Message } from "@/types/chat";
+import { ChatSession } from "@/types/chat";
 import Chat from "@/components/Chat";
 import Sidebar from "@/components/Sidebar";
 
-const HomePage: React.FC = () => {
+const App: React.FC = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(
     null
@@ -51,7 +49,8 @@ const HomePage: React.FC = () => {
   };
 
   const handleSessionSelect = (session: ChatSession) => {
-    setCurrentSession(session);
+    // セッションを選択して、チャット履歴を復元
+    setCurrentSession({ ...session });
   };
 
   const handleSessionUpdate = (updatedSession: ChatSession) => {
@@ -96,4 +95,4 @@ const HomePage: React.FC = () => {
   );
 };
 
-export default HomePage;
+export default App;
