@@ -128,21 +128,13 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         timestamp: new Date(),
       };
 
-      setMessages((prev) => {
-        const newMessages = [...prev, agentMessage];
-        if (session) {
-          const updatedSession: ChatSession = {
-            ...session,
-            messages: newMessages,
-          };
-          onSessionUpdate(updatedSession);
-        }
-        return newMessages;
-      });
+      const newMessagesWithAgent = [...messages, userMessage, agentMessage];
+      setMessages(newMessagesWithAgent);
 
+      // セッション更新は状態更新の外で実行
       const updatedSession: ChatSession = {
         id: sessionId,
-        messages: [...messages, userMessage, agentMessage],
+        messages: newMessagesWithAgent,
         title:
           session?.title === "新しいチャット" || !session?.title
             ? content.slice(0, 50) + (content.length > 50 ? "..." : "")
@@ -162,20 +154,18 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         sender: "agent",
         timestamp: new Date(),
       };
-      setMessages((prev) => {
-        const newMessages = [...prev, errorMessage];
-
-        // エラーメッセージもセッションに保存
-        if (session) {
-          const updatedSession: ChatSession = {
-            ...session,
-            messages: newMessages,
-          };
-          onSessionUpdate(updatedSession);
-        }
-
-        return newMessages;
-      });
+      const newMessagesWithError = [...messages, userMessage, errorMessage];
+      setMessages(newMessagesWithError);
+      
+      // エラーメッセージもセッションに保存
+      if (session) {
+        const updatedSession: ChatSession = {
+          ...session,
+          messages: newMessagesWithError,
+        };
+        onSessionUpdate(updatedSession);
+      }
+      
       setIsLoading(false);
     }
   };
