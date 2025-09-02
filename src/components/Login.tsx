@@ -2,11 +2,9 @@ import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Login: React.FC = () => {
-  const { login, loginMcpAda, logoutMcpAda, mcpAdaAuth } = useAuth();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [isMcpAdaLoading, setIsMcpAdaLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mcpAdaError, setMcpAdaError] = useState<string | null>(null);
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -18,36 +16,6 @@ const Login: React.FC = () => {
       setError(err instanceof Error ? err.message : "ログインに失敗しました");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleMcpAdaLogin = async () => {
-    setIsMcpAdaLoading(true);
-    setMcpAdaError(null);
-
-    try {
-      await loginMcpAda();
-    } catch (err) {
-      setMcpAdaError(
-        err instanceof Error ? err.message : "MCP ADA認証に失敗しました"
-      );
-    } finally {
-      setIsMcpAdaLoading(false);
-    }
-  };
-
-  const handleMcpAdaLogout = async () => {
-    setIsMcpAdaLoading(true);
-    setMcpAdaError(null);
-
-    try {
-      await logoutMcpAda();
-    } catch (err) {
-      setMcpAdaError(
-        err instanceof Error ? err.message : "MCP ADA認証解除に失敗しました"
-      );
-    } finally {
-      setIsMcpAdaLoading(false);
     }
   };
 
@@ -106,35 +74,6 @@ const Login: React.FC = () => {
                     </h3>
                     <div className="mt-2 text-sm text-red-700">
                       <p>{error}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {mcpAdaError && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg
-                      className="h-5 w-5 text-red-400"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">
-                      MCP ADA認証エラー
-                    </h3>
-                    <div className="mt-2 text-sm text-red-700">
-                      <p>{mcpAdaError}</p>
                     </div>
                   </div>
                 </div>
@@ -201,144 +140,10 @@ const Login: React.FC = () => {
               </button>
             </div>
 
-            {/* 認証状況の表示 */}
-            {mcpAdaAuth && (
-              <div
-                className={`rounded-md p-4 ${
-                  mcpAdaAuth.authenticated ? "bg-green-50" : "bg-yellow-50"
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg
-                        className={`h-5 w-5 ${
-                          mcpAdaAuth.authenticated
-                            ? "text-green-400"
-                            : "text-yellow-400"
-                        }`}
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <h3
-                        className={`text-sm font-medium ${
-                          mcpAdaAuth.authenticated
-                            ? "text-green-800"
-                            : "text-yellow-800"
-                        }`}
-                      >
-                        {mcpAdaAuth.service} 認証状況
-                      </h3>
-                      <div
-                        className={`mt-2 text-sm ${
-                          mcpAdaAuth.authenticated
-                            ? "text-green-700"
-                            : "text-yellow-700"
-                        }`}
-                      >
-                        <p>
-                          {mcpAdaAuth.authenticated
-                            ? "認証済み" +
-                              (mcpAdaAuth.scopes
-                                ? ` (スコープ: ${mcpAdaAuth.scopes.join(", ")})`
-                                : "")
-                            : "未認証"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* MCP ADA認証解除ボタン */}
-                  {mcpAdaAuth.authenticated && (
-                    <button
-                      onClick={handleMcpAdaLogout}
-                      disabled={isMcpAdaLoading}
-                      className="text-sm text-red-600 hover:text-red-800 underline disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      認証解除
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* MCP ADA認証ボタン */}
-            {!mcpAdaAuth?.authenticated && (
-              <div>
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300" />
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">または</span>
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <button
-                    onClick={handleMcpAdaLogin}
-                    disabled={isMcpAdaLoading}
-                    className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isMcpAdaLoading ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        MCP ADA認証中...
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-5 h-5 mr-2"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        MCP ADA で認証
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-
             <div className="mt-6">
               <div className="text-xs text-gray-500 text-center">
-                このアプリケーションはGoogle OAuth 2.0とMCP
-                ADA認証を使用して安全に認証を行います。
+                このアプリケーションはGoogle OAuth
+                2.0を使用して安全に認証を行います。
                 個人情報の取り扱いについては、プライバシーポリシーをご確認ください。
               </div>
             </div>
