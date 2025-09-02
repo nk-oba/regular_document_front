@@ -6,6 +6,7 @@ import { chatApi } from "@/lib/api";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import AgentSelector from "./AgentSelector";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ChatProps {
   session: ChatSession | null;
@@ -13,6 +14,7 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>(session?.messages || []);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -226,7 +228,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         )}
 
         {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
+          <MessageBubble key={message.id} message={message} userName={user?.name} />
         ))}
 
         {isLoading && (

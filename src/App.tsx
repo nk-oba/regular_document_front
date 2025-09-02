@@ -125,8 +125,13 @@ const MainApp: React.FC = () => {
           </div>
           <div className="flex items-center space-x-4">
             {user && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">ようこそ、{user.name}さん</span>
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm text-gray-600">ようこそ、{user.name}さん</span>
+                </div>
                 <button
                   onClick={logout}
                   className="text-sm text-red-600 hover:text-red-800 underline"

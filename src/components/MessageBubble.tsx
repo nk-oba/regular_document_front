@@ -9,9 +9,10 @@ import FileDownload from './FileDownload'
 
 interface MessageBubbleProps {
   message: Message
+  userName?: string
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, userName }) => {
   const isUser = message.sender === 'user'
   const isAgent = message.sender === 'agent'
 
@@ -22,7 +23,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0 ${
           isUser ? 'bg-blue-500' : 'bg-green-500'
         }`}>
-          {isUser ? 'U' : 'AI'}
+          {isUser ? (userName ? userName.charAt(0).toUpperCase() : 'U') : 'AI'}
         </div>
         
         {/* Message Content */}
