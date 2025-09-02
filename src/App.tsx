@@ -210,7 +210,11 @@ const MainApp: React.FC = () => {
                   {mcpAdaLoading
                     ? "処理中..."
                     : mcpAdaAuth.authenticated
-                    ? "認証済み"
+                    ? `認証済み${
+                        mcpAdaAuth.scopes
+                          ? ` (${mcpAdaAuth.scopes.length}スコープ)`
+                          : ""
+                      }`
                     : "未認証"}
                 </span>
                 {!mcpAdaLoading &&

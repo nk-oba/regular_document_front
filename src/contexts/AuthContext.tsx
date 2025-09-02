@@ -95,12 +95,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkMcpAdaStatus = async () => {
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_AGENTS_URL}/auth/mcp-ada/status`,
-        {
-          credentials: "include",
-        }
-      );
+      const apiUrl = import.meta.env.VITE_AGENTS_URL || "http://127.0.0.1:8000";
+      const fullUrl = `${apiUrl}/auth/mcp-ada/status`;
+
+      const response = await fetch(fullUrl, {
+        credentials: "include",
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -125,9 +125,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async () => {
     try {
-      console.log("Starting login process...");
-      console.log("VITE_AGENTS_URL:", import.meta.env.VITE_AGENTS_URL);
-
       // 認証プロセス開始
       setAuthState((prev) => ({
         ...prev,
@@ -140,9 +137,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await fetch(url, {
         credentials: "include",
       });
-
-      console.log("Response status:", response.status);
-      console.log("Response ok:", response.ok);
 
       if (response.ok) {
         const data = await response.json();
@@ -179,14 +173,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loginMcpAda = async () => {
     try {
+      const apiUrl = import.meta.env.VITE_AGENTS_URL || "http://127.0.0.1:8000";
+      const fullUrl = `${apiUrl}/auth/mcp-ada/start`;
       console.log("Starting MCP ADA login process...");
+      console.log("API URL:", apiUrl);
+      console.log("Full URL:", fullUrl);
 
-      const response = await fetch(
-        `${import.meta.env.VITE_AGENTS_URL}/auth/mcp-ada/start`,
-        {
-          credentials: "include",
-        }
-      );
+      const response = await fetch(fullUrl, {
+        credentials: "include",
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -207,24 +202,91 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             );
 
             if (authWindow) {
-              // ポップアップが閉じられるのを監視
-              const checkClosed = setInterval(() => {
-                if (authWindow.closed) {
-                  clearInterval(checkClosed);
-                  // ポップアップが閉じられたら認証状態を確認
+              // 認証完了を検知するための複数の方法を組み合わせ
+              let authCompleted = false;
+
+              const cleanup = () => {
+                window.removeEventListener("message", handleMessage);
+                window.removeEventListener("focus", handleFocus);
+                window.removeEventListener("beforeunload", handleBeforeUnload);
+                if (checkInterval) clearInterval(checkInterval);
+                if (timeoutId) clearTimeout(timeoutId);
+                if (cleanupTimeoutId) clearTimeout(cleanupTimeoutId);
+              };
+
+              // postMessageを使用したクロスドメイン通信
+              const handleMessage = (event: MessageEvent) => {
+                // セキュリティのため、オリジンをチェック
+                if (event.origin !== window.location.origin) {
+                  return;
+                }
+
+                if (event.data && event.data.type === "MCP_ADA_AUTH_COMPLETE") {
+                  console.log(
+                    "MCP ADA authentication completed via postMessage"
+                  );
+                  authCompleted = true;
+                  cleanup();
+                  // 認証完了後、複数回認証状態をチェックして確実に更新
+                  checkMcpAdaStatus();
+                  setTimeout(() => checkMcpAdaStatus(), 1000);
+                  setTimeout(() => checkMcpAdaStatus(), 3000);
+                }
+              };
+
+              // フォーカスが戻ってきた時の処理
+              const handleFocus = () => {
+                if (!authCompleted) {
+                  console.log("Window focus returned, checking auth status");
                   setTimeout(() => {
                     checkMcpAdaStatus();
                   }, 1000);
+                  // 追加のチェックで確実に更新
+                  setTimeout(() => {
+                    checkMcpAdaStatus();
+                  }, 3000);
                 }
-              }, 1000);
+              };
+
+              // ページがアンロードされる前の処理
+              const handleBeforeUnload = () => {
+                if (!authCompleted) {
+                  console.log("Page unloading, checking auth status");
+                  checkMcpAdaStatus();
+                }
+              };
+
+              // イベントリスナーを追加
+              window.addEventListener("message", handleMessage);
+              window.addEventListener("focus", handleFocus);
+              window.addEventListener("beforeunload", handleBeforeUnload);
+
+              // 定期的な認証状態チェック（クロスドメイン制限を回避）
+              const checkInterval = setInterval(() => {
+                if (!authCompleted) {
+                  console.log("Periodic auth status check");
+                  checkMcpAdaStatus();
+                }
+              }, 3000); // 3秒ごとにチェック
 
               // タイムアウト処理（5分）
-              setTimeout(() => {
-                if (!authWindow.closed) {
-                  authWindow.close();
-                  clearInterval(checkClosed);
+              const timeoutId = setTimeout(() => {
+                if (!authCompleted) {
+                  console.log("Auth timeout, cleaning up");
+                  cleanup();
+                  try {
+                    authWindow.close();
+                  } catch (e) {
+                    console.log("Could not close auth window:", e);
+                  }
                 }
               }, 300000);
+
+              // クリーンアップのタイムアウト（10分）
+              const cleanupTimeoutId = setTimeout(() => {
+                console.log("Cleanup timeout reached");
+                cleanup();
+              }, 600000);
             } else {
               // ポップアップがブロックされた場合
               window.location.href = data.auth_url;
@@ -276,7 +338,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logoutMcpAda = async () => {
     try {
-      await fetch(`${import.meta.env.VITE_AGENTS_URL}/auth/mcp-ada/logout`, {
+      const apiUrl = import.meta.env.VITE_AGENTS_URL || "http://127.0.0.1:8000";
+      const fullUrl = `${apiUrl}/auth/mcp-ada/logout`;
+      console.log("MCP ADA logout URL:", fullUrl);
+
+      await fetch(fullUrl, {
         method: "POST",
         credentials: "include",
       });
