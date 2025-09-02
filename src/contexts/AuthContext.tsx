@@ -50,15 +50,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_AGENTS_URL}/auth/status`,
-        {
-          credentials: "include",
-        }
+      const apiUrl = import.meta.env.VITE_AGENTS_URL || "http://127.0.0.1:8000";
+      const fullUrl = `${apiUrl}/auth/status`;
+      console.log("Checking auth status...");
+      console.log("API URL:", apiUrl);
+      console.log("Full URL:", fullUrl);
+
+      const response = await fetch(fullUrl, {
+        credentials: "include",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log(
+        "Auth status response:",
+        response.status,
+        response.statusText
       );
 
       if (response.ok) {
         const data = await response.json();
+        console.log("Auth status data:", data);
         if (data.authenticated) {
           setAuthState((prev) => ({
             ...prev,
@@ -75,6 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }));
         }
       } else {
+        console.log("Auth status check failed with status:", response.status);
         setAuthState((prev) => ({
           ...prev,
           user: null,
@@ -84,12 +99,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error("Auth status check failed:", error);
-      setAuthState((prev) => ({
-        ...prev,
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-      }));
+
+      const errorDetails =
+        error instanceof Error
+          ? {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            }
+          : {
+              name: "Unknown",
+              message: String(error),
+              stack: undefined,
+            };
+
+      console.error("Error details:", errorDetails);
+
+      // ネットワークエラーの場合は、認証状態をリセットせずにローディングを停止
+      if (
+        error instanceof Error &&
+        error.name === "TypeError" &&
+        error.message.includes("Failed to fetch")
+      ) {
+        console.warn("Network error detected, keeping current auth state");
+        setAuthState((prev) => ({
+          ...prev,
+          isLoading: false,
+        }));
+      } else {
+        setAuthState((prev) => ({
+          ...prev,
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+        }));
+      }
     }
   };
 
