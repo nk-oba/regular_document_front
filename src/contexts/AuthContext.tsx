@@ -128,6 +128,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log("Starting login process...");
       console.log("VITE_AGENTS_URL:", import.meta.env.VITE_AGENTS_URL);
 
+      // 認証プロセス開始
+      setAuthState((prev) => ({
+        ...prev,
+        isLoading: true,
+      }));
+
       const url = `${import.meta.env.VITE_AGENTS_URL}/auth/start`;
       console.log("Fetching:", url);
 
@@ -162,6 +168,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error("Login failed:", error);
+      // エラー時は認証プロセスを終了
+      setAuthState((prev) => ({
+        ...prev,
+        isLoading: false,
+      }));
       throw error;
     }
   };
@@ -289,15 +300,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // 認証状態の変更を定期的にチェック（認証完了後の自動更新用）
+  // 未認証状態では定期的チェックを行わない
   useEffect(() => {
-    if (!authState.isAuthenticated && !authState.isLoading) {
+    // 認証プロセス中のみ定期的チェックを実行
+    if (authState.isLoading) {
       const interval = setInterval(() => {
         checkAuthStatus();
       }, 2000); // 2秒ごとにチェック
 
       return () => clearInterval(interval);
     }
-  }, [authState.isAuthenticated, authState.isLoading]);
+  }, [authState.isLoading]);
 
   return (
     <AuthContext.Provider
