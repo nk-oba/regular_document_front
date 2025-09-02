@@ -18,17 +18,13 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
   const [messages, setMessages] = useState<Message[]>(session?.messages || []);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [conversationId, setConversationId] = useState<string | undefined>(
-    session?.id
-  );
+  const [conversationId, setConversationId] = useState<string | undefined>();
   const [isApiReady, setIsApiReady] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<string>(
     session?.selectedAgent || "document_creating_agent"
   );
-  // userId を一度生成したら保持する
-  const [userId, setUserId] = useState<string>(() => 
-    "user_" + Math.floor(Math.random() * 10000)
-  );
+  // userId を認証されたユーザー情報から取得
+  const userId = user?.id || "anonymous";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -40,6 +36,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
 
   useEffect(() => {
     if (session) {
+      console.log('Session changed:', session.id);
       setMessages(session.messages);
       setConversationId(session.id);
       setSelectedAgent(session.selectedAgent || "document_creating_agent");
@@ -79,6 +76,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
 
     try {
       const sessionId = conversationId || session?.id || Date.now().toString();
+      console.log('Sending message with sessionId:', sessionId, 'conversationId:', conversationId, 'session?.id:', session?.id);
       
       // セッションが存在しない場合は作成
       if (!conversationId) {

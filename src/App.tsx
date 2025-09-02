@@ -55,6 +55,7 @@ const MainApp: React.FC = () => {
 
   const handleSessionSelect = (session: ChatSession) => {
     // セッションを選択して、チャット履歴を復元
+    console.log('Selecting session:', session.id, 'with', session.messages.length, 'messages');
     setCurrentSession({ ...session });
   };
 
