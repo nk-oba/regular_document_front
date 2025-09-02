@@ -14,8 +14,14 @@ export interface ChatSession {
 }
 
 export interface MessageRequest {
-  message: string
-  conversation_id?: string
+  appName: string
+  userId: string
+  sessionId: string
+  newMessage: {
+    parts: { text: string }[]
+    role: string
+  }
+  streaming?: boolean
 }
 
 export interface MessageResponse {
