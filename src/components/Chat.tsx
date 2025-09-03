@@ -36,7 +36,6 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
 
   useEffect(() => {
     if (session) {
-      console.log("Session changed:", session.id);
       setMessages(session.messages);
       setConversationId(session.id);
       setSelectedAgent(session.selectedAgent || "document_creating_agent");

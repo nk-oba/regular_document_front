@@ -4,7 +4,6 @@ import Chat from "@/components/Chat";
 import Sidebar from "@/components/Sidebar";
 import Login from "@/components/Login";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { chatApi } from "@/lib/api";
 
 const MainApp: React.FC = () => {
   const {
@@ -58,7 +57,12 @@ const MainApp: React.FC = () => {
 
     try {
       // バックエンドでセッション作成
-      await chatApi.createSession("document_creating_agent", user?.id || "anonymous", newSessionId, {});
+      await chatApi.createSession(
+        "document_creating_agent",
+        user?.id || "anonymous",
+        newSessionId,
+        {}
+      );
       console.log("Backend session created:", newSessionId);
     } catch (error) {
       console.error("Failed to create backend session:", error);
