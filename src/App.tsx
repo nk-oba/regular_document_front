@@ -4,6 +4,7 @@ import Chat from "@/components/Chat";
 import Sidebar from "@/components/Sidebar";
 import Login from "@/components/Login";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { chatApi } from "@/lib/api";
 
 const MainApp: React.FC = () => {
   const {
@@ -42,7 +43,7 @@ const MainApp: React.FC = () => {
     }
   }, [sessions]);
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
     // 新規セッションを作成
     const newSessionId = `session_${Date.now()}_${Math.floor(
       Math.random() * 1000
@@ -54,6 +55,14 @@ const MainApp: React.FC = () => {
       createdAt: new Date(),
       selectedAgent: "document_creating_agent",
     };
+
+    try {
+      // バックエンドでセッション作成
+      await chatApi.createSession("document_creating_agent", user?.id || "anonymous", newSessionId, {});
+      console.log("Backend session created:", newSessionId);
+    } catch (error) {
+      console.error("Failed to create backend session:", error);
+    }
 
     // 新規セッションを現在のセッションに設定
     setCurrentSession(newSession);

@@ -36,7 +36,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
 
   useEffect(() => {
     if (session) {
-      console.log('Session changed:', session.id);
+      console.log("Session changed:", session.id);
       setMessages(session.messages);
       setConversationId(session.id);
       setSelectedAgent(session.selectedAgent || "document_creating_agent");
@@ -52,7 +52,8 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
 
   useEffect(() => {
     // APIの健康状態をチェック
-    chatApi.healthCheck()
+    chatApi
+      .healthCheck()
       .then(() => {
         setIsApiReady(true);
       })
@@ -76,8 +77,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
 
     try {
       const sessionId = conversationId || session?.id || Date.now().toString();
-      console.log('Sending message with sessionId:', sessionId, 'conversationId:', conversationId, 'session?.id:', session?.id);
-      
+
       // セッションが存在しない場合は作成
       if (!conversationId) {
         try {
@@ -97,16 +97,16 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         sessionId: sessionId,
         newMessage: {
           parts: [{ text: content.trim() }],
-          role: "user"
+          role: "user",
         },
-        streaming: false
+        streaming: false,
       };
 
       const response = await chatApi.sendMessage(request);
-      
+
       // レスポンスから応答メッセージを抽出
       let agentResponseText = "エージェントからの応答を処理中...";
-      
+
       if (Array.isArray(response)) {
         for (const event of response) {
           if (event?.content?.parts) {
@@ -145,7 +145,6 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
 
       onSessionUpdate(updatedSession);
       setIsLoading(false);
-      
     } catch (error) {
       console.error("Failed to send message:", error);
       const errorMessage: Message = {
@@ -156,7 +155,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
       };
       const newMessagesWithError = [...messages, userMessage, errorMessage];
       setMessages(newMessagesWithError);
-      
+
       // エラーメッセージもセッションに保存
       if (session) {
         const updatedSession: ChatSession = {
@@ -165,7 +164,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         };
         onSessionUpdate(updatedSession);
       }
-      
+
       setIsLoading(false);
     }
   };
@@ -226,7 +225,11 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         )}
 
         {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} userName={user?.name} />
+          <MessageBubble
+            key={message.id}
+            message={message}
+            userName={user?.name}
+          />
         ))}
 
         {isLoading && (
