@@ -4,6 +4,7 @@ import Chat from "@/components/Chat";
 import Sidebar from "@/components/Sidebar";
 import Login from "@/components/Login";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { chatApi } from "@/lib/api";
 
 const MainApp: React.FC = () => {
   const {

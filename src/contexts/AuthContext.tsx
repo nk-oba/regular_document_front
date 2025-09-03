@@ -281,11 +281,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               // フォーカスが戻ってきた時の処理
               const handleFocus = () => {
                 if (!authCompleted) {
-                  console.log("Window focus returned, checking auth status");
                   setTimeout(() => {
                     checkMcpAdaStatus();
                   }, 1000);
-                  // 追加のチェックで確実に更新
                   setTimeout(() => {
                     checkMcpAdaStatus();
                   }, 3000);
