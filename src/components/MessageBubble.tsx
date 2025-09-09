@@ -10,9 +10,12 @@ import FileDownload from './FileDownload'
 interface MessageBubbleProps {
   message: Message
   userName?: string
+  userId?: string
+  sessionId?: string
+  selectedAgent?: string
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, userName }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, userName, userId, sessionId, selectedAgent }) => {
   const isUser = message.sender === 'user'
   const isAgent = message.sender === 'agent'
 
@@ -77,8 +80,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, userName }) => {
             )}
           </div>
           
-          {/* PowerPointファイルダウンロード機能 */}
-          {isAgent && <FileDownload content={message.content} />}
+          {/* 生成されたファイルのダウンロード機能 */}
+          {isAgent && <FileDownload 
+            content={message.content} 
+            artifactDelta={message.artifactDelta}
+            userId={userId}
+            sessionId={sessionId}
+            selectedAgent={selectedAgent}
+            invocationId={message.invocationId}
+          />}
           
           <div className={`text-xs mt-2 ${
             isUser ? 'text-blue-100' : 'text-gray-500'

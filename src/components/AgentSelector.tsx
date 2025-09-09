@@ -41,8 +41,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         });
 
         if (response.ok) {
-          const apps = await response.json();
-          const agentOptions = apps.map((app: any) => ({
+          const data = await response.json();
+          const agentOptions = (data.apps || []).map((app: any) => ({
             id: app.name || app.id || app,
             name: getAgentDisplayName(app.name || app.id || app),
             description:

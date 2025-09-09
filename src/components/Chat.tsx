@@ -103,8 +103,10 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
 
       const response = await chatApi.sendMessage(request);
 
-      // レスポンスから応答メッセージを抽出
+      // レスポンスから応答メッセージ、artifactDelta、invocationIdを抽出
       let agentResponseText = "エージェントからの応答を処理中...";
+      let artifactDelta: any = null;
+      let invocationId: string | undefined = undefined;
 
       if (Array.isArray(response)) {
         for (const event of response) {
@@ -116,6 +118,12 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
               }
             }
           }
+          if (event?.actions?.artifactDelta) {
+            artifactDelta = event.actions.artifactDelta;
+          }
+          if (event?.invocationId) {
+            invocationId = event.invocationId;
+          }
           if (agentResponseText !== "エージェントからの応答を処理中...") break;
         }
       }
@@ -125,6 +133,8 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         content: agentResponseText,
         sender: "agent",
         timestamp: new Date(),
+        artifactDelta: artifactDelta,
+        invocationId: invocationId,
       };
 
       const newMessagesWithAgent = [...messages, userMessage, agentMessage];
@@ -228,6 +238,9 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
             key={message.id}
             message={message}
             userName={user?.name}
+            userId={userId}
+            sessionId={conversationId}
+            selectedAgent={selectedAgent}
           />
         ))}
 

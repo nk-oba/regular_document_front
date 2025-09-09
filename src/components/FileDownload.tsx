@@ -4,55 +4,220 @@ import React from 'react'
 
 interface FileDownloadProps {
   content: string
+  artifactDelta?: any
+  userId?: string
+  sessionId?: string
+  selectedAgent?: string
+  invocationId?: string
 }
 
-const FileDownload: React.FC<FileDownloadProps> = ({ content }) => {
-  const downloadPattern = /\[(.+\.pptx?)\]\((.*?)\)/g
-  const matches = Array.from(content.matchAll(downloadPattern))
-
-  if (matches.length === 0) {
-    return null
+const FileDownload: React.FC<FileDownloadProps> = ({ content, artifactDelta, userId, sessionId, selectedAgent, invocationId }) => {
+  // artifactDeltaが存在しない場合は何も表示しない
+  if (!artifactDelta) {
+    return null;
   }
 
-  const handleDownload = async (filename: string, url: string) => {
+  // artifactDeltaからファイル情報を抽出
+  const artifactFiles: { filename: string; version: number }[] = []
+  
+  if (typeof artifactDelta === 'object' && artifactDelta !== null) {
+    Object.entries(artifactDelta).forEach(([filename, version]) => {
+      if (typeof filename === 'string' && (typeof version === 'number' || typeof version === 'string')) {
+        artifactFiles.push({
+          filename,
+          version: typeof version === 'string' ? parseInt(version, 10) : version
+        })
+      }
+    })
+  }
+
+  // artifactDeltaからファイルが見つからない場合は、従来のパターンマッチングを試行
+  let matches: RegExpMatchArray[] = []
+  if (artifactFiles.length === 0) {
+    const patterns = [
+      /\[(?:🗂️|📁|📄)\s*(.+?)\s*をダウンロード\]\((.*?)\)/g,
+      /\[(.+\.(?:csv|json|txt|html|pdf|xlsx|docx|pptx|png|jpg))\s*をダウンロード\]\((.*?)\)/gi,
+      /\[(.+\.(?:csv|json|txt|html|pdf|xlsx|docx|pptx|png|jpg))\]\((.*?)\)/gi,
+    ]
+    
+    for (const pattern of patterns) {
+      matches = Array.from(content.matchAll(pattern))
+      if (matches.length > 0) break
+    }
+  }
+
+  // デバッグ用ログ
+  console.log('FileDownload content:', content)
+  console.log('FileDownload artifactDelta:', artifactDelta)
+  console.log('FileDownload artifactFiles:', artifactFiles)
+  console.log('FileDownload invocationId:', invocationId)
+  console.log('FileDownload download method:', invocationId ? 'invocation-based' : 'session-based')
+
+  // ダウンロードAPI呼び出しを関数でラップ
+  const downloadFile = async (url: string): Promise<Blob> => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+    }
+    return await response.blob();
+  };
+
+  // 動的ダウンロードURL生成関数
+  const generateDownloadUrl = (filename: string, version?: number): string => {
+    const baseUrl = window.location.origin;
+    const versionParam = version !== undefined ? `?version=${version}` : '';
+    
+    // invocationIdがある場合は、invocationIdベースのエンドポイントを使用
+    if (invocationId) {
+      return `${baseUrl}/download/artifact/by-invocation/${invocationId}/${filename}${versionParam}`;
+    }
+    
+    // フォールバック: 従来の方法
+    const agent = selectedAgent || 'document_creating_agent';
+    const user = userId || 'anonymous';
+    const session = sessionId || 'default_session';
+    return `${baseUrl}/download/artifact/${agent}/${user}/${session}/${filename}${versionParam}`;
+  };
+
+  const handleDownload = async (filename: string, url?: string) => {
     try {
-      if (url.startsWith('http')) {
-        // 外部URLの場合
-        window.open(url, '_blank')
-      } else {
-        // Base64データまたはローカルファイルの場合
-        const response = await fetch(`/api/download?file=${encodeURIComponent(url)}`)
-        if (response.ok) {
-          const blob = await response.blob()
-          const downloadUrl = window.URL.createObjectURL(blob)
+      // URLが提供されていない場合は動的に生成
+      const downloadUrl = url || generateDownloadUrl(filename);
+      
+      if (downloadUrl.startsWith('http')) {
+        // ストリーミングダウンロードエンドポイントの場合
+        if (downloadUrl.includes('/download/artifact/')) {
+          // 汎用Artifactダウンロードの場合、ラップした関数でダウンロードを試行
+          const blob = await downloadFile(downloadUrl);
+          const blobUrl = window.URL.createObjectURL(blob)
           const a = document.createElement('a')
-          a.href = downloadUrl
+          a.href = blobUrl
           a.download = filename
           document.body.appendChild(a)
           a.click()
           document.body.removeChild(a)
-          window.URL.revokeObjectURL(downloadUrl)
+          window.URL.revokeObjectURL(blobUrl)
+        } else {
+          // その他の外部URLの場合
+          window.open(downloadUrl, '_blank')
         }
+      } else {
+        // Base64データまたはローカルファイルの場合（従来の処理）
+        const blob = await downloadFile(`/api/download?file=${encodeURIComponent(downloadUrl)}`);
+        const blobUrl = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = blobUrl
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(blobUrl)
       }
     } catch (error) {
       console.error('Download failed:', error)
-      alert('ダウンロードに失敗しました。')
+      alert('ダウンロードに失敗しました。エラー: ' + (error as Error).message)
     }
   }
 
+  if (artifactFiles.length === 0 && matches.length === 0) {
+    // デバッグ表示（開発時のみ）
+    if (content.includes('をダウンロード') || content.includes('download')) {
+      return (
+        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <h4 className="font-semibold text-yellow-800 mb-2">🐛 デバッグ情報</h4>
+          <p className="text-sm text-yellow-700">
+            ダウンロード関連のテキストが検出されましたが、artifactDeltaまたは正規表現にマッチしませんでした。
+          </p>
+          <details className="mt-2">
+            <summary className="text-xs text-yellow-600 cursor-pointer">詳細を表示</summary>
+            <pre className="text-xs mt-1 p-2 bg-yellow-100 rounded overflow-auto max-h-32">
+              Content: {content}
+              ArtifactDelta: {JSON.stringify(artifactDelta)}
+            </pre>
+          </details>
+          <div className="mt-2">
+            <button
+              onClick={() => {
+                // テスト用のダウンロード
+                handleDownload('test.csv')
+              }}
+              className="text-xs px-2 py-1 bg-yellow-200 text-yellow-800 rounded hover:bg-yellow-300"
+            >
+              テストダウンロード
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
+
+  // ファイル拡張子に基づいてアイコンを選択
+  const getFileIcon = (filename: string) => {
+    const extension = filename.toLowerCase().split('.').pop() || ''
+    switch (extension) {
+      case 'csv': return '📊'
+      case 'json': return '📋'
+      case 'txt': return '📝'
+      case 'html': case 'htm': return '🌐'
+      case 'pdf': return '📕'
+      case 'xlsx': case 'xls': return '📗'
+      case 'docx': case 'doc': return '📘'
+      case 'pptx': case 'ppt': return '📙'
+      case 'png': case 'jpg': case 'jpeg': case 'gif': return '🖼️'
+      case 'zip': case 'tar': case 'gz': return '🗜️'
+      default: return '📄'
+    }
+  }
+
+  const totalFiles = artifactFiles.length + matches.length;
+
   return (
-    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-      <h4 className="font-semibold text-blue-800 mb-2">📁 生成されたファイル</h4>
+    <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg shadow-sm">
+      <h4 className="font-semibold text-blue-800 mb-2 flex items-center">
+        <span className="mr-2">📁</span>
+        生成されたファイル ({totalFiles}件)
+      </h4>
       <div className="space-y-2">
+        {/* artifactDeltaからのファイル表示 */}
+        {artifactFiles.map((file, index) => (
+          <button
+            key={`artifact-${index}`}
+            onClick={() => handleDownload(file.filename)}
+            className="flex items-center space-x-3 w-full p-3 text-left bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 border border-blue-300 rounded-lg text-blue-700 hover:text-blue-900 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md"
+          >
+            <span className="text-xl">{getFileIcon(file.filename)}</span>
+            <div className="flex-1 min-w-0">
+              <span className="font-medium block truncate">{file.filename}</span>
+              <span className="text-xs text-blue-500 opacity-75">
+                {file.filename.toLowerCase().split('.').pop()?.toUpperCase()} ファイル (v{file.version})
+              </span>
+            </div>
+            <div className="flex items-center space-x-1 text-sm font-medium text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
+              <span>⬇️</span>
+              <span>ダウンロード</span>
+            </div>
+          </button>
+        ))}
+        
+        {/* 従来のパターンマッチングからのファイル表示 */}
         {matches.map(([, filename, url], index) => (
           <button
-            key={index}
+            key={`match-${index}`}
             onClick={() => handleDownload(filename, url)}
-            className="flex items-center space-x-2 w-full p-2 text-left bg-white hover:bg-blue-50 border border-blue-300 rounded text-blue-700 hover:text-blue-900 transition-colors"
+            className="flex items-center space-x-3 w-full p-3 text-left bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 border border-blue-300 rounded-lg text-blue-700 hover:text-blue-900 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md"
           >
-            <span className="text-lg">📄</span>
-            <span className="font-medium">{filename}</span>
-            <span className="ml-auto text-sm text-blue-600">ダウンロード</span>
+            <span className="text-xl">{getFileIcon(filename)}</span>
+            <div className="flex-1 min-w-0">
+              <span className="font-medium block truncate">{filename}</span>
+              <span className="text-xs text-blue-500 opacity-75">
+                {filename.toLowerCase().split('.').pop()?.toUpperCase()} ファイル
+              </span>
+            </div>
+            <div className="flex items-center space-x-1 text-sm font-medium text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
+              <span>⬇️</span>
+              <span>ダウンロード</span>
+            </div>
           </button>
         ))}
       </div>

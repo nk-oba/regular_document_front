@@ -3,6 +3,8 @@ export interface Message {
   content: string
   sender: 'user' | 'agent'
   timestamp: Date
+  artifactDelta?: any
+  invocationId?: string
 }
 
 export interface ChatSession {
