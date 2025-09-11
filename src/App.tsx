@@ -105,7 +105,7 @@ const MainApp: React.FC = () => {
         await loginMcpAda();
       }
     } catch (error) {
-      console.error("MCP ADA authentication toggle failed:", error);
+      console.error("MCP Ad Analyzer authentication toggle failed:", error);
     } finally {
       setMcpAdaLoading(false);
     }
@@ -165,7 +165,7 @@ const MainApp: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-4">
-            {/* MCP ADA認証状態表示（クリック可能） */}
+            {/* MCP Ad Analyzer認証状態表示（クリック可能） */}
             {mcpAdaAuth && (
               <button
                 onClick={handleMcpAdaToggle}
@@ -214,15 +214,11 @@ const MainApp: React.FC = () => {
                   ></div>
                 )}
                 <span>
-                  MCP ADA:{" "}
+                  Ad Analyzer:{" "}
                   {mcpAdaLoading
                     ? "処理中..."
                     : mcpAdaAuth.authenticated
-                    ? `認証済み${
-                        mcpAdaAuth.scopes
-                          ? ` (${mcpAdaAuth.scopes.length}スコープ)`
-                          : ""
-                      }`
+                    ? `認証済み`
                     : "未認証"}
                 </span>
                 {!mcpAdaLoading &&

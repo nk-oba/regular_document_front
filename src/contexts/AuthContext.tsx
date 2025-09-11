@@ -155,14 +155,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setAuthState((prev) => ({
           ...prev,
-          mcpAdaAuth: { authenticated: false, service: "MCP ADA" },
+          mcpAdaAuth: { authenticated: false, service: "MCP Ad Analyzer" },
         }));
       }
     } catch (error) {
-      console.error("MCP ADA auth status check failed:", error);
+      console.error("MCP Ad Analyzer auth status check failed:", error);
       setAuthState((prev) => ({
         ...prev,
-        mcpAdaAuth: { authenticated: false, service: "MCP ADA" },
+        mcpAdaAuth: { authenticated: false, service: "MCP Ad Analyzer" },
       }));
     }
   };
@@ -219,7 +219,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const apiUrl = import.meta.env.VITE_AGENTS_URL || "http://127.0.0.1:8000";
       const fullUrl = `${apiUrl}/auth/mcp-ada/start`;
-      console.log("Starting MCP ADA login process...");
+      console.log("Starting MCP Ad Analyzer login process...");
       console.log("API URL:", apiUrl);
       console.log("Full URL:", fullUrl);
 
@@ -229,16 +229,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("MCP ADA Response data:", data);
+        console.log("MCP Ad Analyzer Response data:", data);
 
         if (data.success) {
           if (data.authenticated) {
             // 既に認証済み
-            console.log("Already authenticated with MCP ADA");
+            console.log("Already authenticated with MCP Ad Analyzer");
             await checkMcpAdaStatus();
           } else if (data.auth_url) {
             // 認証URLを新しいウィンドウで開く
-            console.log("Opening MCP ADA auth URL:", data.auth_url);
+            console.log("Opening MCP Ad Analyzer auth URL:", data.auth_url);
             const authWindow = window.open(
               data.auth_url,
               "mcp_ada_auth",
@@ -267,7 +267,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
                 if (event.data && event.data.type === "MCP_ADA_AUTH_COMPLETE") {
                   console.log(
-                    "MCP ADA authentication completed via postMessage"
+                    "MCP Ad Analyzer authentication completed via postMessage"
                   );
                   authCompleted = true;
                   cleanup();
@@ -335,21 +335,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
           }
         } else {
-          throw new Error(data.message || "MCP ADA Authentication failed");
+          throw new Error(
+            data.message || "MCP Ad Analyzer Authentication failed"
+          );
         }
       } else {
         const errorText = await response.text();
         console.error(
-          "MCP ADA Authentication request failed:",
+          "MCP Ad Analyzer Authentication request failed:",
           response.status,
           errorText
         );
         throw new Error(
-          `Failed to start MCP ADA authentication: ${response.status}`
+          `Failed to start MCP Ad Analyzer authentication: ${response.status}`
         );
       }
     } catch (error) {
-      console.error("MCP ADA Login failed:", error);
+      console.error("MCP Ad Analyzer Login failed:", error);
       throw error;
     }
   };
@@ -382,7 +384,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const apiUrl = import.meta.env.VITE_AGENTS_URL || "http://127.0.0.1:8000";
       const fullUrl = `${apiUrl}/auth/mcp-ada/logout`;
-      console.log("MCP ADA logout URL:", fullUrl);
+      console.log("MCP Ad Analyzer logout URL:", fullUrl);
 
       await fetch(fullUrl, {
         method: "POST",
@@ -391,13 +393,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setAuthState((prev) => ({
         ...prev,
-        mcpAdaAuth: { authenticated: false, service: "MCP ADA" },
+        mcpAdaAuth: { authenticated: false, service: "MCP Ad Analyzer" },
       }));
     } catch (error) {
-      console.error("MCP ADA Logout failed:", error);
+      console.error("MCP Ad Analyzer Logout failed:", error);
       setAuthState((prev) => ({
         ...prev,
-        mcpAdaAuth: { authenticated: false, service: "MCP ADA" },
+        mcpAdaAuth: { authenticated: false, service: "MCP Ad Analyzer" },
       }));
     }
   };
