@@ -103,41 +103,42 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
 
       const response = await chatApi.sendMessage(request);
 
-      // レスポンスから応答メッセージ、artifactDelta、invocationIdを抽出
-      let agentResponseText = "エージェントからの応答を処理中...";
-      let artifactDelta: any = null;
-      let invocationId: string | undefined = undefined;
+      // レスポンスから複数のエージェントメッセージを抽出
+      const agentMessages: Message[] = [];
+      let messageIdCounter = Date.now() + 1;
 
       if (Array.isArray(response)) {
         for (const event of response) {
           if (event?.content?.parts) {
             for (const part of event.content.parts) {
               if (part?.text) {
-                agentResponseText = part.text;
-                break;
+                const agentMessage: Message = {
+                  id: (messageIdCounter++).toString(),
+                  content: part.text,
+                  sender: "agent",
+                  timestamp: new Date(),
+                  artifactDelta: event?.actions?.artifactDelta || null,
+                  invocationId: event?.invocationId,
+                };
+                agentMessages.push(agentMessage);
               }
             }
           }
-          if (event?.actions?.artifactDelta) {
-            artifactDelta = event.actions.artifactDelta;
-          }
-          if (event?.invocationId) {
-            invocationId = event.invocationId;
-          }
-          if (agentResponseText !== "エージェントからの応答を処理中...") break;
         }
       }
 
-      const agentMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: agentResponseText,
-        sender: "agent",
-        timestamp: new Date(),
-        artifactDelta: artifactDelta,
-        invocationId: invocationId,
-      };
+      // 何もメッセージが抽出できなかった場合のフォールバック
+      if (agentMessages.length === 0) {
+        const fallbackMessage: Message = {
+          id: messageIdCounter.toString(),
+          content: "エージェントからの応答を処理中...",
+          sender: "agent",
+          timestamp: new Date(),
+        };
+        agentMessages.push(fallbackMessage);
+      }
 
-      const newMessagesWithAgent = [...messages, userMessage, agentMessage];
+      const newMessagesWithAgent = [...messages, userMessage, ...agentMessages];
       setMessages(newMessagesWithAgent);
 
       // セッション更新は状態更新の外で実行
