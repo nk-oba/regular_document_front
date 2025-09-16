@@ -1,238 +1,61 @@
-'use client';
-
-import React, { useEffect, useState, useRef } from 'react';
-import { Message, ChatSession } from '@/types/chat';
-import { MessageResponse } from '@/types/api';
-import { chatApi } from '@/lib/api';
-import { MessageService } from '@/services/messageService';
-import MessageBubble from './MessageBubble';
-import ChatInput from './ChatInput';
-import AgentSelector from './AgentSelector';
-import { useAuth } from '@/hooks/useAuth';
+// Legacy wrapper for backward compatibility
+import React from 'react';
+import { ChatSession as LegacyChatSession, Message as LegacyMessage } from '@/types/chat';
+import { ChatSession } from '@/domain/models/ChatSession';
+import { Message } from '@/domain/models/Message';
+import ChatContainer from '@/presentation/containers/ChatContainer';
 
 interface ChatProps {
-  session: ChatSession | null;
-  onSessionUpdate: (session: ChatSession) => void;
+  session: LegacyChatSession | null;
+  onSessionUpdate: (session: LegacyChatSession) => void;
 }
 
 const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
-  const { user } = useAuth();
-  const [messages, setMessages] = useState<Message[]>(session?.messages || []);
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [conversationId, setConversationId] = useState<string | undefined>();
-  const [isApiReady, setIsApiReady] = useState(true);
-  const [selectedAgent, setSelectedAgent] = useState<string>(
-    session?.selectedAgent || 'document_creating_agent'
-  );
-  // userId を認証されたユーザー情報から取得
-  const userId = user?.id || 'anonymous';
+  // Convert legacy types to domain models
+  const convertToDomainSession = (legacySession: LegacyChatSession): ChatSession => {
+    const domainMessages = legacySession.messages.map((msg: LegacyMessage) =>
+      new Message(
+        msg.id,
+        msg.content,
+        msg.sender,
+        msg.timestamp,
+        msg.artifactDelta,
+        msg.invocationId
+      )
+    );
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    return new ChatSession(
+      legacySession.id,
+      domainMessages,
+      legacySession.title,
+      legacySession.createdAt,
+      legacySession.selectedAgent
+    );
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    if (session) {
-      setMessages(session.messages);
-      setConversationId(session.id);
-      setSelectedAgent(session.selectedAgent || 'document_creating_agent');
-
-      setIsLoading(false);
-    } else {
-      setMessages([]);
-      setConversationId(undefined);
-      setSelectedAgent('document_creating_agent');
-      setIsLoading(false);
-    }
-  }, [session]);
-
-  useEffect(() => {
-    // APIの健康状態をチェック
-    chatApi
-      .healthCheck()
-      .then(() => {
-        setIsApiReady(true);
-      })
-      .catch(() => {
-        setIsApiReady(false);
-      });
-  }, []);
-
-  const handleSendMessage = async (content: string) => {
-    if (!content.trim() || !isApiReady) return;
-
-    const userMessage = MessageService.createUserMessage(content);
-    setMessages((prev) => [...prev, userMessage]);
-    setIsLoading(true);
-
-    try {
-      const sessionId = conversationId || session?.id || Date.now().toString();
-
-      // セッションが存在しない場合は作成
-      if (!conversationId) {
-        try {
-          await chatApi.createSession(selectedAgent, userId, sessionId, {});
-          setConversationId(sessionId);
-        } catch (error) {
-          // セッションが既に存在する場合は無視
-          setConversationId(sessionId);
-        }
-      }
-
-      // メッセージを送信
-      const request = {
-        appName: selectedAgent,
-        userId: userId,
-        sessionId: sessionId,
-        newMessage: {
-          parts: [{ text: content.trim() }],
-          role: 'user',
-        },
-        streaming: false,
-      };
-
-      const response: MessageResponse = await chatApi.sendMessage(request);
-
-      // メッセージサービスを使用してレスポンスを処理
-      let agentMessages = MessageService.extractMessagesFromResponse(response);
-
-      // 何もメッセージが抽出できなかった場合のフォールバック
-      if (agentMessages.length === 0) {
-        agentMessages = [MessageService.createFallbackMessage()];
-      }
-
-      const newMessagesWithAgent = [...messages, userMessage, ...agentMessages];
-      setMessages(newMessagesWithAgent);
-
-      // セッション更新
-      const updatedSession: ChatSession = {
-        id: sessionId,
-        messages: newMessagesWithAgent,
-        title:
-          session?.title === '新しいチャット' || !session?.title
-            ? content.slice(0, 50) + (content.length > 50 ? '...' : '')
-            : session.title,
-        createdAt: session?.createdAt || new Date(),
-        selectedAgent,
-      };
-
-      onSessionUpdate(updatedSession);
-      setIsLoading(false);
-    } catch (error) {
-      const errorMessage = MessageService.createErrorMessage(error);
-      const newMessagesWithError = [...messages, userMessage, errorMessage];
-      setMessages(newMessagesWithError);
-
-      // エラーメッセージもセッションに保存
-      if (session) {
-        const updatedSession: ChatSession = {
-          ...session,
-          messages: newMessagesWithError,
-        };
-        onSessionUpdate(updatedSession);
-      }
-
-      setIsLoading(false);
-    }
+  // Convert domain model back to legacy format
+  const convertToLegacySession = (domainSession: ChatSession): LegacyChatSession => {
+    return {
+      id: domainSession.id,
+      messages: domainSession.messages.map(msg => msg.toPlainObject()),
+      title: domainSession.title,
+      createdAt: domainSession.createdAt,
+      selectedAgent: domainSession.selectedAgent,
+    };
   };
 
-  const handleAgentChange = (agentId: string) => {
-    setSelectedAgent(agentId);
+  const domainSession = session ? convertToDomainSession(session) : null;
 
-    if (session) {
-      const updatedSession: ChatSession = {
-        ...session,
-        selectedAgent: agentId,
-      };
-      onSessionUpdate(updatedSession);
-    }
+  const handleSessionUpdate = (updatedDomainSession: ChatSession) => {
+    const legacySession = convertToLegacySession(updatedDomainSession);
+    onSessionUpdate(legacySession);
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-2 bg-gray-50 border-b">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium"></span>
-          <div className="flex items-center">
-            <div
-              className={`w-2 h-2 rounded-full mr-2 ${
-                isApiReady ? 'bg-green-500' : 'bg-red-500'
-              }`}
-            />
-            <span className="text-xs text-gray-600">
-              {isApiReady ? 'API準備完了' : 'API未接続'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <AgentSelector
-        selectedAgent={selectedAgent}
-        onAgentChange={handleAgentChange}
-        isConnected={isApiReady}
-      />
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center text-gray-500">
-              <h2 className="text-2xl font-bold mb-4">
-                {session ? '新しいチャット' : 'AIエージェント'}
-              </h2>
-              <p>メッセージを送信して会話を開始してください</p>
-              <p className="text-sm mt-2">
-                例: 「売上分析のプレゼン資料を作成してください」
-              </p>
-              {session?.selectedAgent && (
-                <p className="text-sm mt-2 text-blue-600">
-                  使用中エージェント: {session.selectedAgent}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {messages.map((message) => (
-          <MessageBubble
-            key={message.id}
-            message={message}
-            userName={user?.name}
-            userId={userId}
-            sessionId={conversationId}
-            selectedAgent={selectedAgent}
-          />
-        ))}
-
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-lg p-3 max-w-xs">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0.1s' }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0.2s' }}
-                ></div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      <ChatInput
-        onSendMessage={handleSendMessage}
-        disabled={isLoading || !isApiReady}
-      />
-    </div>
+    <ChatContainer
+      session={domainSession}
+      onSessionUpdate={handleSessionUpdate}
+    />
   );
 };
 
