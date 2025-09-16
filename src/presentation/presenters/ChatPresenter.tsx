@@ -5,7 +5,7 @@ import { User } from '@/stores/authStore';
 import MessageBubble from '@/components/MessageBubble';
 import ChatInput from '@/components/ChatInput';
 import AgentSelector from '@/components/AgentSelector';
-import VirtualizedMessageList from '@/components/ui/VirtualizedMessageList';
+import VirtualizedMessageList from '@/components/VirtualizedMessageList';
 
 interface ChatPresenterProps {
   messages: Message[];
