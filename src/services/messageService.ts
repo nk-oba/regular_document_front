@@ -1,5 +1,6 @@
 import { Message } from '@/types/chat';
 import { MessageResponse } from '@/types/api';
+import { ErrorHandler, AppError } from '@/utils/errorHandler';
 
 export class MessageService {
   /**
@@ -45,16 +46,24 @@ export class MessageService {
   /**
    * エラーメッセージを作成
    */
-  static createErrorMessage(error?: Error | unknown): Message {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : typeof error === 'string'
-        ? error
-        : 'エラーが発生しました。API接続を確認してください。';
+  static createErrorMessage(error?: Error | unknown, context?: string): Message {
+    const appError = ErrorHandler.handleError(error, context);
 
     return {
       id: (Date.now() + 1).toString(),
-      content: errorMessage,
+      content: appError.userMessage,
+      sender: 'agent',
+      timestamp: new Date(),
+    };
+  }
+
+  /**
+   * AppErrorからメッセージを作成
+   */
+  static createErrorMessageFromAppError(appError: AppError): Message {
+    return {
+      id: (Date.now() + 1).toString(),
+      content: appError.userMessage,
       sender: 'agent',
       timestamp: new Date(),
     };

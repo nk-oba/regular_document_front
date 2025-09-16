@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, memo } from 'react';
 import { Message } from '@/domain/models/Message';
 import { ChatSession } from '@/domain/models/ChatSession';
 import { User } from '@/stores/authStore';
@@ -124,4 +124,4 @@ const ChatPresenter: React.FC<ChatPresenterProps> = ({
   );
 };
 
-export default ChatPresenter;
+export default memo(ChatPresenter);

@@ -1,4 +1,5 @@
 import { ArtifactDelta } from '@/types/api';
+import { ErrorHandler, AppError } from '@/utils/errorHandler';
 
 export class Message {
   constructor(
@@ -43,16 +44,15 @@ export class Message {
     );
   }
 
-  static createError(error?: Error | unknown): Message {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : typeof error === 'string'
-        ? error
-        : 'エラーが発生しました。API接続を確認してください。';
+  static createError(error?: Error | unknown, context?: string): Message {
+    const appError = ErrorHandler.handleError(error, context);
+    return Message.createFromAppError(appError);
+  }
 
+  static createFromAppError(appError: AppError): Message {
     return new Message(
       (Date.now() + 1).toString(),
-      errorMessage,
+      appError.userMessage,
       'agent',
       new Date()
     );
