@@ -5,9 +5,11 @@ import Sidebar from '@/components/Sidebar';
 import Login from '@/components/Login';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AuthStatus from '@/components/ui/AuthStatus';
+import AgentSelector from '@/components/AgentSelector';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
+import { useApiHealth } from '@/hooks/useChatService';
 
 const MainApp = () => {
   const {
@@ -37,6 +39,22 @@ const MainApp = () => {
     setCurrentSession,
   } = useChat();
 
+  const { checkHealth } = useApiHealth();
+  const [isApiReady, setIsApiReady] = React.useState(true);
+  const [selectedAgent, setSelectedAgent] = React.useState<string>(
+    currentSession?.selectedAgent || 'document_creating_agent'
+  );
+
+  React.useEffect(() => {
+    checkHealth()
+      .then(setIsApiReady)
+      .catch(() => setIsApiReady(false));
+  }, [checkHealth]);
+
+  React.useEffect(() => {
+    setSelectedAgent(currentSession?.selectedAgent || 'document_creating_agent');
+  }, [currentSession]);
+
   const handleNewChat = async () => {
     if (user?.id) {
       await createSession(user.id);
@@ -49,6 +67,14 @@ const MainApp = () => {
 
   const handleSessionUpdate = (updatedSession: ChatSession) => {
     updateSession(updatedSession);
+  };
+
+  const handleAgentChange = (agentId: string) => {
+    setSelectedAgent(agentId);
+    if (currentSession) {
+      const updatedSession = { ...currentSession, selectedAgent: agentId };
+      updateSession(updatedSession);
+    }
   };
 
   const handleMcpAdaToggle = async () => {
@@ -105,11 +131,13 @@ const MainApp = () => {
 
       <div className="flex-1 flex flex-col">
         <header className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">AIエージェント</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Vertex AIを活用したエージェントシステム
-            </p>
+          <div className="flex-1">
+            <AgentSelector
+              selectedAgent={selectedAgent}
+              onAgentChange={handleAgentChange}
+              isConnected={isApiReady}
+              compact={true}
+            />
           </div>
           <div className="flex items-center space-x-4">
             <AuthStatus

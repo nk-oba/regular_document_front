@@ -107,17 +107,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
     ]
   );
 
-  const handleAgentChange = useCallback(
-    (agentId: string) => {
-      setSelectedAgent(agentId);
-
-      if (session) {
-        const updatedSession = session.changeAgent(agentId);
-        onSessionUpdate(updatedSession);
-      }
-    },
-    [session, onSessionUpdate]
-  );
 
   return (
     <ChatPresenter
@@ -129,7 +118,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
       user={user}
       conversationId={conversationId}
       onSendMessage={handleSendMessage}
-      onAgentChange={handleAgentChange}
     />
   );
 };

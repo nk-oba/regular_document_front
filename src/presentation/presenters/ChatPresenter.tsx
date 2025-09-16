@@ -4,7 +4,6 @@ import { ChatSession } from '@/domain/models/ChatSession';
 import { User } from '@/stores/authStore';
 import MessageBubble from '@/components/MessageBubble';
 import ChatInput from '@/components/ChatInput';
-import AgentSelector from '@/components/AgentSelector';
 import VirtualizedMessageList from '@/components/VirtualizedMessageList';
 
 interface ChatPresenterProps {
@@ -16,7 +15,6 @@ interface ChatPresenterProps {
   user: User | null;
   conversationId?: string;
   onSendMessage: (content: string) => void;
-  onAgentChange: (agentId: string) => void;
 }
 
 const ChatPresenter: React.FC<ChatPresenterProps> = ({
@@ -28,7 +26,6 @@ const ChatPresenter: React.FC<ChatPresenterProps> = ({
   user,
   conversationId,
   onSendMessage,
-  onAgentChange,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const userId = user?.id || 'anonymous';
@@ -59,11 +56,6 @@ const ChatPresenter: React.FC<ChatPresenterProps> = ({
         </div>
       </div>
 
-      <AgentSelector
-        selectedAgent={selectedAgent}
-        onAgentChange={onAgentChange}
-        isConnected={isApiReady}
-      />
 
       {/* 大量メッセージの場合は仮想化リストを使用、そうでなければ通常のレンダリング */}
       {messages.length > 50 ? (
