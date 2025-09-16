@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { ChatSession } from "@/types/chat";
-import Chat from "@/components/Chat";
-import Sidebar from "@/components/Sidebar";
-import Login from "@/components/Login";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import AuthStatus from "@/components/ui/AuthStatus";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { chatApi } from "@/lib/api";
+import React from 'react';
+import { ChatSession } from '@/types/chat';
+import Chat from '@/components/Chat';
+import Sidebar from '@/components/Sidebar';
+import Login from '@/components/Login';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import AuthStatus from '@/components/ui/AuthStatus';
+import { useAuth } from '@/hooks/useAuth';
+import { useChat } from '@/hooks/useChat';
 
-const MainApp: React.FC = () => {
+const MainApp = () => {
   const {
     isAuthenticated,
     isLoading,
@@ -17,65 +17,29 @@ const MainApp: React.FC = () => {
     loginMcpAda,
     user,
     mcpAdaAuth,
+    mcpAdaLoading,
+    setMcpAdaLoading,
+    checkMcpAdaStatus,
   } = useAuth();
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [currentSession, setCurrentSession] = useState<ChatSession | null>(
-    null
-  );
-  const [mcpAdaLoading, setMcpAdaLoading] = useState(false);
 
-  useEffect(() => {
-    const savedSessions = localStorage.getItem("chatSessions");
-    if (savedSessions) {
-      const parsed = JSON.parse(savedSessions).map((session: any) => ({
-        ...session,
-        createdAt: new Date(session.createdAt),
-        messages: session.messages.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp),
-        })),
-      }));
-      setSessions(parsed);
+  React.useEffect(() => {
+    if (!isLoading) {
+      checkMcpAdaStatus();
     }
-  }, []);
+  }, [isLoading, checkMcpAdaStatus]);
 
-  useEffect(() => {
-    if (sessions.length > 0) {
-      localStorage.setItem("chatSessions", JSON.stringify(sessions));
-    }
-  }, [sessions]);
+  const {
+    sessions,
+    currentSession,
+    createSession,
+    updateSession,
+    setCurrentSession,
+  } = useChat();
 
   const handleNewChat = async () => {
-    // 新規セッションを作成
-    const newSessionId = `session_${Date.now()}_${Math.floor(
-      Math.random() * 1000
-    )}`;
-    const newSession: ChatSession = {
-      id: newSessionId,
-      messages: [],
-      title: "新しいチャット",
-      createdAt: new Date(),
-      selectedAgent: "document_creating_agent",
-    };
-
-    try {
-      // バックエンドでセッション作成
-      await chatApi.createSession(
-        "document_creating_agent",
-        user?.id || "anonymous",
-        newSessionId,
-        {}
-      );
-      console.log("Backend session created:", newSessionId);
-    } catch (error) {
-      console.error("Failed to create backend session:", error);
+    if (user?.id) {
+      await createSession(user.id);
     }
-
-    // 新規セッションを現在のセッションに設定
-    setCurrentSession(newSession);
-
-    // セッション一覧にも追加（空のメッセージ配列で）
-    setSessions((prev) => [newSession, ...prev]);
   };
 
   const handleSessionSelect = (session: ChatSession) => {
@@ -83,17 +47,7 @@ const MainApp: React.FC = () => {
   };
 
   const handleSessionUpdate = (updatedSession: ChatSession) => {
-    setSessions((prev) => {
-      const existingIndex = prev.findIndex((s) => s.id === updatedSession.id);
-      if (existingIndex >= 0) {
-        const newSessions = [...prev];
-        newSessions[existingIndex] = updatedSession;
-        return newSessions;
-      } else {
-        return [updatedSession, ...prev];
-      }
-    });
-    setCurrentSession(updatedSession);
+    updateSession(updatedSession);
   };
 
   const handleMcpAdaToggle = async () => {
@@ -107,9 +61,18 @@ const MainApp: React.FC = () => {
         await loginMcpAda();
       }
     } catch (error) {
-      console.error("MCP Ad Analyzer authentication toggle failed:", error);
+      console.error('MCP Ad Analyzer authentication toggle failed:', error);
     } finally {
       setMcpAdaLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      setCurrentSession(null);
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
     }
   };
 
@@ -136,7 +99,7 @@ const MainApp: React.FC = () => {
         onSessionSelect={handleSessionSelect}
         onNewChat={handleNewChat}
         user={user}
-        onLogout={logout}
+        onLogout={handleLogout}
       />
 
       <div className="flex-1 flex flex-col">
@@ -167,12 +130,8 @@ const MainApp: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
-  return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
-  );
+const App = () => {
+  return <MainApp />;
 };
 
 export default App;

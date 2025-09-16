@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React from "react";
-import { ChatSession } from "@/types/chat";
+import React from 'react';
+import { ChatSession } from '@/types/chat';
 
 interface User {
   id: string;
@@ -15,8 +15,20 @@ interface SidebarProps {
   onSessionSelect: (session: ChatSession) => void;
   onNewChat: () => void;
   user?: User | null;
-  onLogout?: () => void;
+  onLogout?: () => Promise<void> | void;
 }
+
+const formatDate = (date: Date | string | undefined): string => {
+  try {
+    if (!date) return '日付不明';
+    const dateObj = date instanceof Date ? date : new Date(date);
+    if (isNaN(dateObj.getTime())) return '日付不明';
+    return dateObj.toLocaleDateString('ja-JP');
+  } catch (error) {
+    console.error('Date formatting error:', error);
+    return '日付不明';
+  }
+};
 
 const Sidebar: React.FC<SidebarProps> = ({
   sessions,
@@ -54,15 +66,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => onSessionSelect(session)}
                   className={`w-full text-left p-2 rounded-lg transition-colors duration-150 ${
                     currentSessionId === session.id
-                      ? "bg-blue-100 border border-blue-300"
-                      : "hover:bg-gray-200"
+                      ? 'bg-blue-100 border border-blue-300'
+                      : 'hover:bg-gray-200'
                   }`}
                 >
                   <div className="truncate font-medium text-sm">
                     {session.title}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {session.createdAt.toLocaleDateString("ja-JP")}
+                    {formatDate(session.createdAt)}
                   </div>
                 </button>
               ))}

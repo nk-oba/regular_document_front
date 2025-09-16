@@ -11,6 +11,7 @@ export default defineConfig({
   },
   esbuild: false,
   optimizeDeps: {
+    include: ['zustand'],
     esbuildOptions: {
       target: 'esnext',
     },

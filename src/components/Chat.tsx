@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import React, { useState, useRef, useEffect } from "react";
-import { Message, ChatSession } from "@/types/chat";
-import { chatApi } from "@/lib/api";
-import MessageBubble from "./MessageBubble";
-import ChatInput from "./ChatInput";
-import AgentSelector from "./AgentSelector";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useEffect, useState, useRef } from 'react';
+import { Message, ChatSession } from '@/types/chat';
+import { chatApi } from '@/lib/api';
+import MessageBubble from './MessageBubble';
+import ChatInput from './ChatInput';
+import AgentSelector from './AgentSelector';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ChatProps {
   session: ChatSession | null;
@@ -21,13 +21,13 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [isApiReady, setIsApiReady] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<string>(
-    session?.selectedAgent || "document_creating_agent"
+    session?.selectedAgent || 'document_creating_agent'
   );
   // userId を認証されたユーザー情報から取得
-  const userId = user?.id || "anonymous";
+  const userId = user?.id || 'anonymous';
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -38,13 +38,13 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
     if (session) {
       setMessages(session.messages);
       setConversationId(session.id);
-      setSelectedAgent(session.selectedAgent || "document_creating_agent");
+      setSelectedAgent(session.selectedAgent || 'document_creating_agent');
 
       setIsLoading(false);
     } else {
       setMessages([]);
       setConversationId(undefined);
-      setSelectedAgent("document_creating_agent");
+      setSelectedAgent('document_creating_agent');
       setIsLoading(false);
     }
   }, [session]);
@@ -67,7 +67,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
     const userMessage: Message = {
       id: Date.now().toString(),
       content: content.trim(),
-      sender: "user",
+      sender: 'user',
       timestamp: new Date(),
     };
 
@@ -84,7 +84,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
           setConversationId(sessionId);
         } catch (error) {
           // セッションが既に存在する場合は無視
-          console.log("Session already exists or creation failed:", error);
+          console.log('Session already exists or creation failed:', error);
           setConversationId(sessionId);
         }
       }
@@ -96,7 +96,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         sessionId: sessionId,
         newMessage: {
           parts: [{ text: content.trim() }],
-          role: "user",
+          role: 'user',
         },
         streaming: false,
       };
@@ -115,7 +115,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
                 const agentMessage: Message = {
                   id: (messageIdCounter++).toString(),
                   content: part.text,
-                  sender: "agent",
+                  sender: 'agent',
                   timestamp: new Date(),
                   artifactDelta: event?.actions?.artifactDelta || null,
                   invocationId: event?.invocationId,
@@ -131,8 +131,8 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
       if (agentMessages.length === 0) {
         const fallbackMessage: Message = {
           id: messageIdCounter.toString(),
-          content: "エージェントからの応答を処理中...",
-          sender: "agent",
+          content: 'エージェントからの応答を処理中...',
+          sender: 'agent',
           timestamp: new Date(),
         };
         agentMessages.push(fallbackMessage);
@@ -146,8 +146,8 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         id: sessionId,
         messages: newMessagesWithAgent,
         title:
-          session?.title === "新しいチャット" || !session?.title
-            ? content.slice(0, 50) + (content.length > 50 ? "..." : "")
+          session?.title === '新しいチャット' || !session?.title
+            ? content.slice(0, 50) + (content.length > 50 ? '...' : '')
             : session.title,
         createdAt: session?.createdAt || new Date(),
         selectedAgent,
@@ -156,11 +156,11 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
       onSessionUpdate(updatedSession);
       setIsLoading(false);
     } catch (error) {
-      console.error("Failed to send message:", error);
+      console.error('Failed to send message:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "エラーが発生しました。API接続を確認してください。",
-        sender: "agent",
+        content: 'エラーが発生しました。API接続を確認してください。',
+        sender: 'agent',
         timestamp: new Date(),
       };
       const newMessagesWithError = [...messages, userMessage, errorMessage];
@@ -199,11 +199,11 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
           <div className="flex items-center">
             <div
               className={`w-2 h-2 rounded-full mr-2 ${
-                isApiReady ? "bg-green-500" : "bg-red-500"
+                isApiReady ? 'bg-green-500' : 'bg-red-500'
               }`}
             />
             <span className="text-xs text-gray-600">
-              {isApiReady ? "API準備完了" : "API未接続"}
+              {isApiReady ? 'API準備完了' : 'API未接続'}
             </span>
           </div>
         </div>
@@ -219,7 +219,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-gray-500">
               <h2 className="text-2xl font-bold mb-4">
-                {session ? "新しいチャット" : "AIエージェント"}
+                {session ? '新しいチャット' : 'AIエージェント'}
               </h2>
               <p>メッセージを送信して会話を開始してください</p>
               <p className="text-sm mt-2">
@@ -252,11 +252,11 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                 <div
                   className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.1s" }}
+                  style={{ animationDelay: '0.1s' }}
                 ></div>
                 <div
                   className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.2s" }}
+                  style={{ animationDelay: '0.2s' }}
                 ></div>
               </div>
             </div>

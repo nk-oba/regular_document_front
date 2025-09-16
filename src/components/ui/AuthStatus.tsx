@@ -10,48 +10,44 @@ interface AuthStatusProps {
 const AuthStatus: React.FC<AuthStatusProps> = ({
   mcpAdaAuth,
   mcpAdaLoading,
-  onMcpAdaToggle
+  onMcpAdaToggle,
 }) => {
-  if (!mcpAdaAuth) return null;
+  // mcpAdaAuth が null の場合は「未認証」状態として表示
+  const authStatus = mcpAdaAuth?.authenticated || false;
+  const isLoading = mcpAdaLoading;
 
   return (
     <button
       onClick={onMcpAdaToggle}
       disabled={mcpAdaLoading}
       className={`flex items-center space-x-1 px-3 py-2 rounded-full text-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-        mcpAdaAuth.authenticated
-          ? "bg-green-100 text-green-800 hover:bg-green-200"
-          : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+        authStatus
+          ? 'bg-green-100 text-green-800 hover:bg-green-200'
+          : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
       }`}
       title={
-        mcpAdaLoading
-          ? "処理中..."
-          : mcpAdaAuth.authenticated
-          ? "クリックして認証を解除"
-          : "クリックして認証"
+        isLoading
+          ? '処理中...'
+          : authStatus
+          ? 'クリックして認証を解除'
+          : 'クリックして認証'
       }
     >
-      {mcpAdaLoading ? (
+      {isLoading ? (
         <LoadingSpinner size="sm" className="w-2 h-2" />
       ) : (
         <div
           className={`w-2 h-2 rounded-full ${
-            mcpAdaAuth.authenticated
-              ? "bg-green-500"
-              : "bg-yellow-500"
+            authStatus ? 'bg-green-500' : 'bg-yellow-500'
           }`}
         />
       )}
       <span>
-        Ad Analyzer:{" "}
-        {mcpAdaLoading
-          ? "処理中..."
-          : mcpAdaAuth.authenticated
-          ? "認証済み"
-          : "未認証"}
+        Ad Analyzer:{' '}
+        {isLoading ? '処理中...' : authStatus ? '認証済み' : '未認証'}
       </span>
-      {!mcpAdaLoading &&
-        (mcpAdaAuth.authenticated ? (
+      {!isLoading &&
+        (authStatus ? (
           <svg
             className="w-3 h-3 ml-1"
             fill="none"
