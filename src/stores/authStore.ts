@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { logger } from '@/utils/logger';
 
 export interface User {
   id: string;
@@ -102,7 +103,7 @@ export const useAuthStore = create<AuthStore>()(
             );
           }
         } catch (error) {
-          console.error('Auth status check failed:', error);
+          logger.error('Auth status check failed', error, 'AuthStore');
           set(
             {
               user: null,
@@ -120,7 +121,7 @@ export const useAuthStore = create<AuthStore>()(
           const apiUrl = getApiUrl();
           window.location.href = `${apiUrl}/auth/google`;
         } catch (error) {
-          console.error('Login failed:', error);
+          logger.error('Login failed', error, 'AuthStore');
           throw error;
         }
       },
@@ -139,14 +140,12 @@ export const useAuthStore = create<AuthStore>()(
           });
 
           if (response.ok) {
-            console.log('Logout successful');
+            logger.info('Logout successful', undefined, 'AuthStore');
           } else {
-            console.warn(
-              'Logout request failed, but continuing with local logout'
-            );
+            logger.warn('Logout request failed, but continuing with local logout', undefined, 'AuthStore');
           }
         } catch (error) {
-          console.error('Logout request failed:', error);
+          logger.error('Logout request failed', error, 'AuthStore');
         } finally {
           set(
             {
@@ -163,14 +162,14 @@ export const useAuthStore = create<AuthStore>()(
           try {
             localStorage.removeItem('auth-store');
           } catch (e) {
-            console.warn('Failed to clear localStorage:', e);
+            logger.warn('Failed to clear localStorage', e, 'AuthStore');
           }
 
           try {
             const baseUrl = window.location.origin + window.location.pathname;
             window.history.replaceState({}, document.title, baseUrl);
           } catch (e) {
-            console.warn('Failed to clean URL:', e);
+            logger.warn('Failed to clean URL', e, 'AuthStore');
           }
         }
       },
@@ -193,7 +192,7 @@ export const useAuthStore = create<AuthStore>()(
             set({ mcpAdaAuth: null }, false, 'checkMcpAdaStatus:error');
           }
         } catch (error) {
-          console.error('MCP Ada status check failed:', error);
+          logger.error('MCP Ada status check failed', error, 'AuthStore');
           set({ mcpAdaAuth: null }, false, 'checkMcpAdaStatus:exception');
         }
       },
@@ -230,7 +229,7 @@ export const useAuthStore = create<AuthStore>()(
             throw new Error(`MCP Ada login failed: ${response.statusText}`);
           }
         } catch (error) {
-          console.error('MCP Ada login failed:', error);
+          logger.error('MCP Ada login failed', error, 'AuthStore');
           throw error;
         }
       },
@@ -252,7 +251,7 @@ export const useAuthStore = create<AuthStore>()(
             throw new Error(`MCP Ada logout failed: ${response.statusText}`);
           }
         } catch (error) {
-          console.error('MCP Ada logout failed:', error);
+          logger.error('MCP Ada logout failed', error, 'AuthStore');
           throw error;
         }
       },

@@ -50,7 +50,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, userName, userId
                     ul: ({ ...props }) => <ul className="list-disc pl-4 mb-2" {...props} />,
                     ol: ({ ...props }) => <ol className="list-decimal pl-4 mb-2" {...props} />,
                     li: ({ ...props }) => <li className="mb-1" {...props} />,
-                    code: ({ node, inline, className, children, ...props }: any) => 
+                    code: ({ inline, children, ...props }: { inline?: boolean; children?: React.ReactNode }) => 
                       inline ? (
                         <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...props}>
                           {children}

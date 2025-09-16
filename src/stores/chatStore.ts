@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { ChatSession } from '@/types/chat';
 import { chatApi } from '@/lib/api';
+import { logger } from '@/utils/logger';
 
 interface ChatState {
   sessions: ChatSession[];
@@ -65,9 +66,9 @@ export const useChatStore = create<ChatStore>()(
               newSessionId,
               {}
             );
-            console.log('Backend session created:', newSessionId);
+            logger.info('Backend session created', { sessionId: newSessionId }, 'ChatStore');
           } catch (error) {
-            console.error('Failed to create backend session:', error);
+            logger.error('Failed to create backend session', error, 'ChatStore');
           }
 
           // Update state
@@ -146,7 +147,7 @@ export const useChatStore = create<ChatStore>()(
               }
               return parsed;
             } catch (error) {
-              console.error('Failed to parse stored chat data:', error);
+              logger.error('Failed to parse stored chat data', error, 'ChatStore');
               return null;
             }
           },

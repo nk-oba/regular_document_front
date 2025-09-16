@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { Message, ChatSession } from '@/types/chat';
+import { MessageResponse } from '@/types/api';
 import { chatApi } from '@/lib/api';
+import { MessageService } from '@/services/messageService';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import AgentSelector from './AgentSelector';
@@ -64,13 +66,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
   const handleSendMessage = async (content: string) => {
     if (!content.trim() || !isApiReady) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: content.trim(),
-      sender: 'user',
-      timestamp: new Date(),
-    };
-
+    const userMessage = MessageService.createUserMessage(content);
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
@@ -84,7 +80,6 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
           setConversationId(sessionId);
         } catch (error) {
           // セッションが既に存在する場合は無視
-          console.log('Session already exists or creation failed:', error);
           setConversationId(sessionId);
         }
       }
@@ -101,47 +96,20 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
         streaming: false,
       };
 
-      const response = await chatApi.sendMessage(request);
+      const response: MessageResponse = await chatApi.sendMessage(request);
 
-      // レスポンスから複数のエージェントメッセージを抽出
-      const agentMessages: Message[] = [];
-      let messageIdCounter = Date.now() + 1;
-
-      if (Array.isArray(response)) {
-        for (const event of response) {
-          if (event?.content?.parts) {
-            for (const part of event.content.parts) {
-              if (part?.text) {
-                const agentMessage: Message = {
-                  id: (messageIdCounter++).toString(),
-                  content: part.text,
-                  sender: 'agent',
-                  timestamp: new Date(),
-                  artifactDelta: event?.actions?.artifactDelta || null,
-                  invocationId: event?.invocationId,
-                };
-                agentMessages.push(agentMessage);
-              }
-            }
-          }
-        }
-      }
+      // メッセージサービスを使用してレスポンスを処理
+      let agentMessages = MessageService.extractMessagesFromResponse(response);
 
       // 何もメッセージが抽出できなかった場合のフォールバック
       if (agentMessages.length === 0) {
-        const fallbackMessage: Message = {
-          id: messageIdCounter.toString(),
-          content: 'エージェントからの応答を処理中...',
-          sender: 'agent',
-          timestamp: new Date(),
-        };
-        agentMessages.push(fallbackMessage);
+        agentMessages = [MessageService.createFallbackMessage()];
       }
 
       const newMessagesWithAgent = [...messages, userMessage, ...agentMessages];
       setMessages(newMessagesWithAgent);
 
-      // セッション更新は状態更新の外で実行
+      // セッション更新
       const updatedSession: ChatSession = {
         id: sessionId,
         messages: newMessagesWithAgent,
@@ -156,13 +124,7 @@ const Chat: React.FC<ChatProps> = ({ session, onSessionUpdate }) => {
       onSessionUpdate(updatedSession);
       setIsLoading(false);
     } catch (error) {
-      console.error('Failed to send message:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: 'エラーが発生しました。API接続を確認してください。',
-        sender: 'agent',
-        timestamp: new Date(),
-      };
+      const errorMessage = MessageService.createErrorMessage(error);
       const newMessagesWithError = [...messages, userMessage, errorMessage];
       setMessages(newMessagesWithError);
 

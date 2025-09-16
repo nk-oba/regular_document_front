@@ -1,5 +1,11 @@
 import axios from "axios";
-import { MessageRequest, MessageResponse } from "@/types/chat";
+import {
+  MessageRequest,
+  MessageResponse,
+  SessionCreateRequest,
+  SessionResponse,
+  HealthCheckResponse
+} from "@/types/api";
 
 const baseURL = import.meta.env.VITE_AGENTS_URL || "http://127.0.0.1:8000";
 
@@ -30,9 +36,9 @@ export const chatApi = {
     appName: string,
     userId: string,
     sessionId: string,
-    state?: any
-  ): Promise<any> => {
-    const response = await api.post(
+    state?: SessionCreateRequest
+  ): Promise<SessionResponse> => {
+    const response = await api.post<SessionResponse>(
       `/apps/${appName}/users/${userId}/sessions/${sessionId}`,
       state || {}
     );
@@ -44,7 +50,7 @@ export const chatApi = {
     appName: string,
     userId: string,
     sessionId: string
-  ): Promise<any> => {
+  ): Promise<SessionResponse> => {
     const response = await api.get(
       `/apps/${appName}/users/${userId}/sessions/${sessionId}`
     );
@@ -52,7 +58,7 @@ export const chatApi = {
   },
 
   // セッション一覧取得API (GET /apps/{app_name}/users/{user_id}/sessions)
-  listSessions: async (appName: string, userId: string): Promise<any[]> => {
+  listSessions: async (appName: string, userId: string): Promise<SessionResponse[]> => {
     const response = await api.get(`/apps/${appName}/users/${userId}/sessions`);
     return response.data;
   },
@@ -85,7 +91,7 @@ export const chatApi = {
     sessionId: string,
     artifactName: string,
     version?: number
-  ): Promise<any> => {
+  ): Promise<{ content: string; metadata?: Record<string, unknown> }> => {
     const url = `/apps/${appName}/users/${userId}/sessions/${sessionId}/artifacts/${artifactName}`;
     const params = version ? { version } : {};
     const response = await api.get(url, { params });
@@ -93,7 +99,7 @@ export const chatApi = {
   },
 
   // ヘルスチェック (アプリ一覧を利用)
-  healthCheck: async (): Promise<{ status: string; apps?: string[] }> => {
+  healthCheck: async (): Promise<HealthCheckResponse> => {
     try {
       const apps = await chatApi.listApps();
       return { status: "ok", apps };
