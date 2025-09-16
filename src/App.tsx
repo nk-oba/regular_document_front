@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import Login from '@/components/Login';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AuthStatus from '@/components/ui/AuthStatus';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
 
@@ -131,7 +132,11 @@ const MainApp = () => {
 };
 
 const App = () => {
-  return <MainApp />;
+  return (
+    <ErrorBoundary>
+      <MainApp />
+    </ErrorBoundary>
+  );
 };
 
 export default App;

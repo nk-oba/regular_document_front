@@ -4,7 +4,7 @@ import React from 'react'
 
 interface FileDownloadProps {
   content: string
-  artifactDelta?: any
+  artifactDelta?: { type?: string; metadata?: Record<string, unknown> }
   userId?: string
   sessionId?: string
   selectedAgent?: string

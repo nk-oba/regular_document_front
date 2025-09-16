@@ -2,7 +2,7 @@ import React from 'react';
 import LoadingSpinner from './LoadingSpinner';
 
 interface AuthStatusProps {
-  mcpAdaAuth: any;
+  mcpAdaAuth: { authenticated?: boolean; user?: { name?: string } } | null;
   mcpAdaLoading: boolean;
   onMcpAdaToggle: () => void;
 }

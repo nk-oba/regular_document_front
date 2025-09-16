@@ -79,7 +79,7 @@ class ErrorBoundary extends Component<Props, State> {
               </button>
             </div>
 
-            {process.env.NODE_ENV === 'development' && (
+            {import.meta.env.DEV && (
               <details className="mt-4 text-sm">
                 <summary className="cursor-pointer text-gray-600 hover:text-gray-800">
                   詳細なエラー情報（開発用）

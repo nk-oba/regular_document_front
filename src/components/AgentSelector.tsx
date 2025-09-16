@@ -42,13 +42,15 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 
         if (response.ok) {
           const data = await response.json();
-          const agentOptions = (data.apps || []).map((app: any) => ({
-            id: app.name || app.id || app,
-            name: getAgentDisplayName(app.name || app.id || app),
-            description:
-              app.description || getAgentDescription(app.name || app.id || app),
-            isEnabled: true,
-          }));
+          const agentOptions = (data.apps || []).map((app: { id?: string; name?: string; description?: string } | string) => {
+            const appId = typeof app === 'string' ? app : (app.name || app.id || '');
+            return {
+              id: appId,
+              name: getAgentDisplayName(appId),
+              description: typeof app === 'string' ? getAgentDescription(appId) : (app.description || getAgentDescription(appId)),
+              isEnabled: true,
+            };
+          });
           setAgents(agentOptions);
         } else {
           console.error("Failed to fetch apps:", response.statusText);
