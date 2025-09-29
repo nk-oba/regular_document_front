@@ -19,6 +19,11 @@ interface ChatActions {
   createSession: (userId: string) => Promise<void>;
   updateSession: (session: ChatSession) => void;
   clearSessions: () => void;
+  loadSessionFromApi: (
+    appName: string,
+    userId: string,
+    sessionId: string
+  ) => Promise<void>;
 }
 
 export interface ChatStore extends ChatState, ChatActions {}
@@ -66,9 +71,17 @@ export const useChatStore = create<ChatStore>()(
               newSessionId,
               {}
             );
-            logger.info('Backend session created', { sessionId: newSessionId }, 'ChatStore');
+            logger.info(
+              'Backend session created',
+              { sessionId: newSessionId },
+              'ChatStore'
+            );
           } catch (error) {
-            logger.error('Failed to create backend session', error, 'ChatStore');
+            logger.error(
+              'Failed to create backend session',
+              error,
+              'ChatStore'
+            );
           }
 
           // Update state
@@ -119,6 +132,132 @@ export const useChatStore = create<ChatStore>()(
             'clearSessions'
           );
         },
+
+        loadSessionFromApi: async (appName, userId, sessionId) => {
+          set({ isLoading: true }, false, 'loadSessionFromApi:start');
+
+          try {
+            const sessionResponse = await chatApi.getSession(
+              appName,
+              userId,
+              sessionId
+            );
+
+            // APIレスポンスをChatSessionに変換
+            const messages: any[] = [];
+
+            // 1. events配列からメッセージを抽出（正しい構造）
+            if (
+              sessionResponse.events &&
+              Array.isArray(sessionResponse.events)
+            ) {
+              sessionResponse.events.forEach((event: any) => {
+                if (
+                  event?.content?.parts &&
+                  Array.isArray(event.content.parts)
+                ) {
+                  // 各イベントのpartsからテキストコンテンツを抽出
+                  const textContent = event.content.parts
+                    .filter((part: any) => part?.text)
+                    .map((part: any) => part.text)
+                    .join('\n');
+
+                  if (textContent) {
+                    // roleまたはauthorからsenderを決定
+                    let sender = 'agent';
+                    if (
+                      event.content.role === 'user' ||
+                      event.author === 'user'
+                    ) {
+                      sender = 'user';
+                    }
+
+                    messages.push({
+                      id: event.id || crypto.randomUUID(),
+                      content: textContent,
+                      sender: sender as 'user' | 'agent',
+                      timestamp: new Date(
+                        event.timestamp
+                          ? event.timestamp * 1000
+                          : sessionResponse.updatedAt
+                      ),
+                      artifactDelta: event.actions?.artifactDelta,
+                      invocationId: event.invocationId,
+                    });
+                  }
+                }
+              });
+            }
+            // 2. フォールバック: state.messages構造
+            else if (
+              sessionResponse.state?.messages &&
+              Array.isArray(sessionResponse.state.messages)
+            ) {
+              sessionResponse.state.messages.forEach((msg: any) => {
+                if (msg?.content && msg?.sender) {
+                  messages.push({
+                    id: msg.id || crypto.randomUUID(),
+                    content: msg.content,
+                    sender: msg.sender === 'user' ? 'user' : 'agent',
+                    timestamp: new Date(
+                      msg.timestamp || sessionResponse.updatedAt
+                    ),
+                    artifactDelta: msg.artifactDelta,
+                    invocationId: msg.invocationId,
+                  });
+                }
+              });
+            }
+
+            // セッションタイトルを抽出
+            const title =
+              sessionResponse.state?.title ||
+              (messages.length > 0
+                ? messages[0].content.slice(0, 50) + '...'
+                : '新しいチャット');
+
+            const loadedSession: ChatSession = {
+              id: sessionResponse.id,
+              messages,
+              title,
+              createdAt: new Date(sessionResponse.createdAt),
+              selectedAgent: appName,
+            };
+
+            // 既存のセッション一覧を更新
+            const currentSessions = get().sessions;
+            const existingIndex = currentSessions.findIndex(
+              (s) => s.id === sessionId
+            );
+
+            let updatedSessions: ChatSession[];
+            if (existingIndex >= 0) {
+              updatedSessions = [...currentSessions];
+              updatedSessions[existingIndex] = loadedSession;
+            } else {
+              updatedSessions = [loadedSession, ...currentSessions];
+            }
+
+            set(
+              {
+                currentSession: loadedSession,
+                sessions: updatedSessions,
+                isLoading: false,
+              },
+              false,
+              'loadSessionFromApi:success'
+            );
+
+            logger.info(
+              'Session loaded from API',
+              { sessionId, messageCount: messages.length },
+              'ChatStore'
+            );
+          } catch (error) {
+            logger.error('Failed to load session from API', error, 'ChatStore');
+            set({ isLoading: false }, false, 'loadSessionFromApi:error');
+          }
+        },
       }),
       {
         name: 'chat-store',
@@ -147,7 +286,11 @@ export const useChatStore = create<ChatStore>()(
               }
               return parsed;
             } catch (error) {
-              logger.error('Failed to parse stored chat data', error, 'ChatStore');
+              logger.error(
+                'Failed to parse stored chat data',
+                error,
+                'ChatStore'
+              );
               return null;
             }
           },

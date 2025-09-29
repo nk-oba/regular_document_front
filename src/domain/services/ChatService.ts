@@ -1,7 +1,10 @@
-import { ChatRepository, SessionRepository } from '../repositories/ChatRepository';
+import {
+  ChatRepository,
+  SessionRepository,
+} from '../repositories/ChatRepository';
 import { ChatSession } from '../models/ChatSession';
 import { Message } from '../models/Message';
-import { MessageResponse } from '@/types/api';
+import { MessageResponse, SessionResponse } from '@/types/api';
 import { logger } from '@/utils/logger';
 
 export class ChatService {
@@ -22,8 +25,16 @@ export class ChatService {
     if (!currentSession) {
       currentSession = ChatSession.create(userId, selectedAgent);
       try {
-        await this.chatRepository.createSession(selectedAgent, userId, currentSession.id);
-        logger.info('Backend session created', { sessionId: currentSession.id }, 'ChatService');
+        await this.chatRepository.createSession(
+          selectedAgent,
+          userId,
+          currentSession.id
+        );
+        logger.info(
+          'Backend session created',
+          { sessionId: currentSession.id },
+          'ChatService'
+        );
       } catch (error) {
         logger.error('Failed to create backend session', error, 'ChatService');
       }
@@ -42,7 +53,9 @@ export class ChatService {
         streaming: false,
       };
 
-      const response: MessageResponse = await this.chatRepository.sendMessage(request);
+      const response: MessageResponse = await this.chatRepository.sendMessage(
+        request
+      );
 
       // レスポンスからメッセージを抽出
       const agentMessages = this.extractMessagesFromResponse(response);
@@ -61,7 +74,10 @@ export class ChatService {
     } catch (error) {
       logger.error('Failed to send message', error, 'ChatService');
       const errorMessage = Message.createError(error);
-      const updatedSession = currentSession.addMessages([userMessage, errorMessage]);
+      const updatedSession = currentSession.addMessages([
+        userMessage,
+        errorMessage,
+      ]);
       return { updatedSession, agentMessages: [errorMessage] };
     }
   }
@@ -129,5 +145,69 @@ export class ChatService {
 
   createSession(userId: string, selectedAgent: string): ChatSession {
     return ChatSession.create(userId, selectedAgent);
+  }
+
+  async loadSessionFromApi(
+    appName: string,
+    userId: string,
+    sessionId: string
+  ): Promise<ChatSession | null> {
+    try {
+      const sessionResponse: SessionResponse =
+        await this.chatRepository.getSession(appName, userId, sessionId);
+
+      // APIからのSessionResponseをChatSessionに変換
+      // この変換はSessionResponseの構造に依存するため、
+      // 実際のAPIレスポンス構造に合わせて調整が必要
+      return this.convertSessionResponseToChatSession(sessionResponse, appName);
+    } catch (error) {
+      logger.error('Failed to load session from API', error, 'ChatService');
+      return null;
+    }
+  }
+
+  private convertSessionResponseToChatSession(
+    sessionResponse: SessionResponse,
+    appName: string
+  ): ChatSession {
+    // APIからのレスポンスをChatSessionに変換
+    // stateの中にメッセージ履歴やその他の情報が含まれている可能性を考慮
+    const messages: Message[] = [];
+
+    // SessionResponseのstateからメッセージを抽出
+    // 実際のAPIレスポンス構造に応じて実装を調整
+    if (
+      sessionResponse.state?.messages &&
+      Array.isArray(sessionResponse.state.messages)
+    ) {
+      sessionResponse.state.messages.forEach((msg: any) => {
+        if (msg?.content && msg?.sender) {
+          const message = new Message(
+            msg.id || crypto.randomUUID(),
+            msg.content,
+            msg.sender === 'user' ? 'user' : 'agent',
+            new Date(msg.timestamp || sessionResponse.updatedAt),
+            msg.artifactDelta,
+            msg.invocationId
+          );
+          messages.push(message);
+        }
+      });
+    }
+
+    // セッションタイトルを抽出（stateから、またはデフォルト値）
+    const title =
+      sessionResponse.state?.title ||
+      (messages.length > 0
+        ? messages[0].content.slice(0, 50) + '...'
+        : '新しいチャット');
+
+    return new ChatSession(
+      sessionResponse.id,
+      messages,
+      title,
+      new Date(sessionResponse.createdAt),
+      appName
+    );
   }
 }

@@ -1,5 +1,5 @@
 import { ChatSession } from '../models/ChatSession';
-import { MessageRequest, MessageResponse } from '@/types/api';
+import { MessageRequest, MessageResponse, SessionResponse } from '@/types/api';
 
 export interface ChatRepository {
   // セッション管理
@@ -8,6 +8,13 @@ export interface ChatRepository {
     userId: string,
     sessionId: string
   ): Promise<void>;
+
+  // セッション取得
+  getSession(
+    appName: string,
+    userId: string,
+    sessionId: string
+  ): Promise<SessionResponse>;
 
   // メッセージ送信
   sendMessage(request: MessageRequest): Promise<MessageResponse>;

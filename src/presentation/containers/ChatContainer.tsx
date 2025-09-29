@@ -107,7 +107,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
     ]
   );
 
-
   return (
     <ChatPresenter
       messages={messages}

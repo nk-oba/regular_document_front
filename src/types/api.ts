@@ -64,9 +64,25 @@ export interface SessionCreateRequest {
 
 export interface SessionResponse {
   id: string;
+  appName?: string;
+  userId?: string;
   state: Record<string, any>;
+  events?: Array<{
+    id: string;
+    content?: {
+      role?: string;
+      parts?: Array<{ text?: string }>;
+    };
+    author?: string;
+    timestamp?: number;
+    invocationId?: string;
+    actions?: {
+      artifactDelta?: ArtifactDelta;
+    };
+  }>;
   createdAt: string;
   updatedAt: string;
+  lastUpdateTime?: number;
 }
 
 export interface HealthCheckResponse {

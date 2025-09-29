@@ -14,7 +14,7 @@ import { useApiHealth } from '@/hooks/useChatService';
 const MainApp = () => {
   const {
     isAuthenticated,
-    isLoading,
+    isLoading: authLoading,
     logout,
     logoutMcpAda,
     loginMcpAda,
@@ -26,17 +26,19 @@ const MainApp = () => {
   } = useAuth();
 
   React.useEffect(() => {
-    if (!isLoading) {
+    if (!authLoading) {
       checkMcpAdaStatus();
     }
-  }, [isLoading, checkMcpAdaStatus]);
+  }, [authLoading, checkMcpAdaStatus]);
 
   const {
     sessions,
     currentSession,
+    isLoading: chatLoading,
     createSession,
     updateSession,
     setCurrentSession,
+    loadSessionFromApi,
   } = useChat();
 
   const { checkHealth } = useApiHealth();
@@ -52,7 +54,9 @@ const MainApp = () => {
   }, [checkHealth]);
 
   React.useEffect(() => {
-    setSelectedAgent(currentSession?.selectedAgent || 'document_creating_agent');
+    setSelectedAgent(
+      currentSession?.selectedAgent || 'document_creating_agent'
+    );
   }, [currentSession]);
 
   const handleNewChat = async () => {
@@ -61,8 +65,28 @@ const MainApp = () => {
     }
   };
 
-  const handleSessionSelect = (session: ChatSession) => {
-    setCurrentSession({ ...session });
+  const handleSessionSelect = async (session: ChatSession) => {
+    if (!user?.id) {
+      console.warn('User ID not available for session loading');
+      setCurrentSession({ ...session });
+      return;
+    }
+
+    try {
+      // APIからセッション詳細を取得
+      await loadSessionFromApi(
+        session.selectedAgent || selectedAgent,
+        user.id,
+        session.id
+      );
+    } catch (error) {
+      console.error(
+        'Failed to load session from API, using local data:',
+        error
+      );
+      // API取得に失敗した場合はローカルデータを使用
+      setCurrentSession({ ...session });
+    }
   };
 
   const handleSessionUpdate = (updatedSession: ChatSession) => {
@@ -103,7 +127,7 @@ const MainApp = () => {
     }
   };
 
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -127,6 +151,7 @@ const MainApp = () => {
         onNewChat={handleNewChat}
         user={user}
         onLogout={handleLogout}
+        isLoading={chatLoading}
       />
 
       <div className="flex-1 flex flex-col">

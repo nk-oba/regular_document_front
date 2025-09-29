@@ -16,6 +16,7 @@ interface SidebarProps {
   onNewChat: () => void;
   user?: User | null;
   onLogout?: () => Promise<void> | void;
+  isLoading?: boolean;
 }
 
 const formatDate = (date: Date | string | undefined): string => {
@@ -37,6 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onNewChat,
   user,
   onLogout,
+  isLoading = false,
 }) => {
   return (
     <div className="w-64 bg-gray-100 border-r border-gray-300 flex flex-col h-full">
@@ -64,11 +66,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   key={session.id}
                   onClick={() => onSessionSelect(session)}
+                  disabled={isLoading}
                   className={`w-full text-left p-2 rounded-lg transition-colors duration-150 ${
                     currentSessionId === session.id
                       ? 'bg-blue-100 border border-blue-300'
                       : 'hover:bg-gray-200'
-                  }`}
+                  } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <div className="truncate font-medium text-sm">
                     {session.title}
@@ -76,6 +79,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                   <div className="text-xs text-gray-500 mt-1">
                     {formatDate(session.createdAt)}
                   </div>
+                  {isLoading && currentSessionId === session.id && (
+                    <div className="text-xs text-blue-500 mt-1">
+                      読み込み中...
+                    </div>
+                  )}
                 </button>
               ))}
             </div>

@@ -1,5 +1,5 @@
 import { ChatRepository } from '@/domain/repositories/ChatRepository';
-import { MessageRequest, MessageResponse } from '@/types/api';
+import { MessageRequest, MessageResponse, SessionResponse } from '@/types/api';
 import { chatApi } from '@/lib/api';
 
 export class ChatApiRepository implements ChatRepository {
@@ -9,6 +9,14 @@ export class ChatApiRepository implements ChatRepository {
     sessionId: string
   ): Promise<void> {
     await chatApi.createSession(appName, userId, sessionId, {});
+  }
+
+  async getSession(
+    appName: string,
+    userId: string,
+    sessionId: string
+  ): Promise<SessionResponse> {
+    return await chatApi.getSession(appName, userId, sessionId);
   }
 
   async sendMessage(request: MessageRequest): Promise<MessageResponse> {
