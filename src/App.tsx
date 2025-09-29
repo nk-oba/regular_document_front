@@ -39,7 +39,14 @@ const MainApp = () => {
     updateSession,
     setCurrentSession,
     loadSessionFromApi,
+    loadSessionsFromApi,
   } = useChat();
+
+  React.useEffect(() => {
+    if (isAuthenticated && user?.id && !authLoading) {
+      loadSessionsFromApi('document_creating_agent', user.id);
+    }
+  }, [isAuthenticated, user?.id, authLoading, loadSessionsFromApi]);
 
   const { checkHealth } = useApiHealth();
   const [isApiReady, setIsApiReady] = React.useState(true);
@@ -62,6 +69,9 @@ const MainApp = () => {
   const handleNewChat = async () => {
     if (user?.id) {
       await createSession(user.id);
+      setTimeout(() => {
+        loadSessionsFromApi('document_creating_agent', user.id);
+      }, 1000);
     }
   };
 

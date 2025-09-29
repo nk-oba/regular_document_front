@@ -19,6 +19,7 @@ export const useChat = () => {
     updateSession: store.updateSession,
     clearSessions: store.clearSessions,
     loadSessionFromApi: store.loadSessionFromApi,
+    loadSessionsFromApi: store.loadSessionsFromApi,
   };
 };
 
@@ -42,5 +43,6 @@ export const useChatActions = () => {
     updateSession: store.updateSession,
     clearSessions: store.clearSessions,
     loadSessionFromApi: store.loadSessionFromApi,
+    loadSessionsFromApi: store.loadSessionsFromApi,
   };
 };

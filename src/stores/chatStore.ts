@@ -24,6 +24,7 @@ interface ChatActions {
     userId: string,
     sessionId: string
   ) => Promise<void>;
+  loadSessionsFromApi: (appName: string, userId: string) => Promise<void>;
 }
 
 export interface ChatStore extends ChatState, ChatActions {}
@@ -209,9 +210,23 @@ export const useChatStore = create<ChatStore>()(
               });
             }
 
-            // セッションタイトルを抽出
+            // セッションタイトルを抽出（既存セッション一覧のタイトルを優先）
+            const allSessions = get().sessions;
+            const existingSession = allSessions.find((s) => s.id === sessionId);
+
+            console.log('🔍 Session title resolution:', {
+              sessionId,
+              stateTitle: sessionResponse.state?.title,
+              existingTitle: existingSession?.title,
+              firstMessage:
+                messages.length > 0
+                  ? messages[0].content.slice(0, 50)
+                  : 'no messages',
+            });
+
             const title =
               sessionResponse.state?.title ||
+              existingSession?.title ||
               (messages.length > 0
                 ? messages[0].content.slice(0, 50) + '...'
                 : '新しいチャット');
@@ -220,7 +235,9 @@ export const useChatStore = create<ChatStore>()(
               id: sessionResponse.id,
               messages,
               title,
-              createdAt: new Date(sessionResponse.createdAt),
+              createdAt:
+                existingSession?.createdAt ||
+                new Date(sessionResponse.createdAt),
               selectedAgent: appName,
             };
 
@@ -258,11 +275,155 @@ export const useChatStore = create<ChatStore>()(
             set({ isLoading: false }, false, 'loadSessionFromApi:error');
           }
         },
+
+        loadSessionsFromApi: async (appName, userId) => {
+          set({ isLoading: true }, false, 'loadSessionsFromApi:start');
+
+          console.log('🔍 loadSessionsFromApi called with:', {
+            appName,
+            userId,
+          });
+
+          // localStorage清掃（API統合のため）
+          try {
+            localStorage.removeItem('chat-store');
+            console.log('✅ localStorage cleared');
+          } catch (e) {
+            logger.warn('Failed to clear localStorage:', e, 'ChatStore');
+          }
+
+          try {
+            console.log('📡 Calling API: listSessions...');
+            const response = await chatApi.listSessions(appName, userId);
+            console.log('📥 API Response received:', response);
+
+            // listSessions は既に sessions 配列を返す
+            const sessionResponses = response;
+            logger.info(
+              'API sessions loaded',
+              { count: sessionResponses.length },
+              'ChatStore'
+            );
+
+            // APIレスポンスをChatSessionの配列に変換
+            const apiSessions: ChatSession[] = sessionResponses.map(
+              (sessionResponse: any) => {
+                const messages: any[] = [];
+
+                // API レスポンスからメッセージを構築（一覧では詳細は取得せず、簡略版のみ）
+                if (sessionResponse.firstMessage) {
+                  messages.push({
+                    id: 'first-' + sessionResponse.id,
+                    content: sessionResponse.firstMessage.content,
+                    sender:
+                      sessionResponse.firstMessage.role === 'user'
+                        ? 'user'
+                        : 'agent',
+                    timestamp: new Date(
+                      sessionResponse.firstMessage.timestamp ||
+                        sessionResponse.createdAt
+                    ),
+                    artifactDelta: undefined,
+                    invocationId: undefined,
+                  });
+                }
+
+                if (
+                  sessionResponse.lastMessage &&
+                  sessionResponse.lastMessage !== sessionResponse.firstMessage
+                ) {
+                  messages.push({
+                    id: 'last-' + sessionResponse.id,
+                    content: sessionResponse.lastMessage.content,
+                    sender:
+                      sessionResponse.lastMessage.role === 'user'
+                        ? 'user'
+                        : 'agent',
+                    timestamp: new Date(
+                      sessionResponse.lastMessage.timestamp ||
+                        sessionResponse.updatedAt
+                    ),
+                    artifactDelta: undefined,
+                    invocationId: undefined,
+                  });
+                }
+
+                // セッションタイトルを抽出（APIで提供される title を優先）
+                const title =
+                  sessionResponse.title ||
+                  (sessionResponse.firstMessage?.content
+                    ? sessionResponse.firstMessage.content.slice(0, 50) + '...'
+                    : '新しいチャット');
+                // デバッグ用（必要に応じて削除）
+                if (
+                  !sessionResponse.title &&
+                  !sessionResponse.firstMessage?.content
+                ) {
+                  logger.warn(
+                    'Session without title or first message',
+                    {
+                      sessionId: sessionResponse.id,
+                    },
+                    'ChatStore'
+                  );
+                }
+
+                return {
+                  id: sessionResponse.id,
+                  messages,
+                  title,
+                  createdAt: new Date(sessionResponse.createdAt),
+                  selectedAgent: sessionResponse.selectedAgent || appName,
+                };
+              }
+            );
+
+            // 作成日時でソート（新しい順）
+            const sortedSessions = apiSessions.sort(
+              (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+            );
+
+            set(
+              {
+                sessions: sortedSessions,
+                isLoading: false,
+              },
+              false,
+              'loadSessionsFromApi:success'
+            );
+
+            logger.info(
+              'Sessions loaded from API',
+              {
+                sessionCount: sortedSessions.length,
+                firstSession: sortedSessions[0],
+              },
+              'ChatStore'
+            );
+          } catch (error) {
+            logger.error(
+              'Failed to load sessions from API',
+              error,
+              'ChatStore'
+            );
+
+            // エラー時はlocalStorageからフォールバック
+            logger.info(
+              'Falling back to localStorage sessions',
+              undefined,
+              'ChatStore'
+            );
+            set({ isLoading: false }, false, 'loadSessionsFromApi:error');
+
+            // 既存のlocalStorageデータを保持
+          }
+        },
       }),
       {
         name: 'chat-store',
         partialize: (state) => ({
-          sessions: state.sessions,
+          // API統合のため、sessionsの永続化は一時的に削除
+          // sessions: state.sessions,
           selectedAgent: state.selectedAgent,
         }),
         storage: {
@@ -272,17 +433,9 @@ export const useChatStore = create<ChatStore>()(
 
             try {
               const parsed = JSON.parse(value);
+              // API統合後はsessionsデータの復元をスキップ
               if (parsed.state && parsed.state.sessions) {
-                parsed.state.sessions = parsed.state.sessions.map(
-                  (session: any) => ({
-                    ...session,
-                    createdAt: new Date(session.createdAt),
-                    messages: session.messages.map((msg: any) => ({
-                      ...msg,
-                      timestamp: new Date(msg.timestamp),
-                    })),
-                  })
-                );
+                delete parsed.state.sessions;
               }
               return parsed;
             } catch (error) {

@@ -1,19 +1,19 @@
-import axios from "axios";
+import axios from 'axios';
 import {
   MessageRequest,
   MessageResponse,
   SessionCreateRequest,
   SessionResponse,
-  HealthCheckResponse
-} from "@/types/api";
+  HealthCheckResponse,
+} from '@/types/api';
 
-const baseURL = import.meta.env.VITE_AGENTS_URL || "http://127.0.0.1:8000";
+const baseURL = import.meta.env.VITE_AGENTS_URL || 'http://127.0.0.1:8000';
 
 const api = axios.create({
   baseURL: `${baseURL}`,
   timeout: 120000,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
   withCredentials: true,
 });
@@ -21,13 +21,13 @@ const api = axios.create({
 export const chatApi = {
   // エージェント実行API (POST /run)
   sendMessage: async (request: MessageRequest): Promise<MessageResponse> => {
-    const response = await api.post<MessageResponse>("/run", request);
+    const response = await api.post<MessageResponse>('/run', request);
     return response.data;
   },
 
   // アプリ一覧取得API (GET /list-apps)
   listApps: async (): Promise<string[]> => {
-    const response = await api.get<string[]>("/list-apps");
+    const response = await api.get<string[]>('/list-apps');
     return response.data;
   },
 
@@ -57,10 +57,13 @@ export const chatApi = {
     return response.data;
   },
 
-  // セッション一覧取得API (GET /apps/{app_name}/users/{user_id}/sessions)
-  listSessions: async (appName: string, userId: string): Promise<SessionResponse[]> => {
-    const response = await api.get(`/apps/${appName}/users/${userId}/sessions`);
-    return response.data;
+  // セッション一覧取得API (GET /apps/{app_name}/sessions/{user_id})
+  listSessions: async (
+    appName: string,
+    userId: string
+  ): Promise<SessionResponse[]> => {
+    const response = await api.get(`/apps/${appName}/sessions/${userId}`);
+    return response.data.sessions || response.data;
   },
 
   // セッション削除API (DELETE /apps/{app_name}/users/{user_id}/sessions/{session_id})
@@ -102,9 +105,9 @@ export const chatApi = {
   healthCheck: async (): Promise<HealthCheckResponse> => {
     try {
       const apps = await chatApi.listApps();
-      return { status: "ok", apps };
+      return { status: 'ok', apps };
     } catch (error) {
-      return { status: "error" };
+      return { status: 'error' };
     }
   },
 };
