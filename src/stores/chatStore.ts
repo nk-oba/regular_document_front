@@ -152,6 +152,24 @@ export const useChatStore = create<ChatStore>()(
               sessionResponse.events &&
               Array.isArray(sessionResponse.events)
             ) {
+              // まず、invocationIdごとのartifactDeltaマップを作成
+              const artifactDeltaByInvocation = new Map<string, any>();
+              sessionResponse.events.forEach((event: any) => {
+                if (event.invocationId && event.actions?.artifactDelta) {
+                  const existingDelta =
+                    artifactDeltaByInvocation.get(event.invocationId) || {};
+                  artifactDeltaByInvocation.set(event.invocationId, {
+                    ...existingDelta,
+                    ...event.actions.artifactDelta,
+                  });
+                }
+              });
+
+              console.log(
+                'chatStore - ArtifactDelta by invocation:',
+                Object.fromEntries(artifactDeltaByInvocation)
+              );
+
               sessionResponse.events.forEach((event: any) => {
                 if (
                   event?.content?.parts &&
@@ -173,7 +191,13 @@ export const useChatStore = create<ChatStore>()(
                       sender = 'user';
                     }
 
-                    messages.push({
+                    // invocationIdに基づいてartifactDeltaを取得
+                    const artifactDelta = event.invocationId
+                      ? artifactDeltaByInvocation.get(event.invocationId) ||
+                        event.actions?.artifactDelta
+                      : event.actions?.artifactDelta;
+
+                    const message = {
                       id: event.id || crypto.randomUUID(),
                       content: textContent,
                       sender: sender as 'user' | 'agent',
@@ -182,9 +206,25 @@ export const useChatStore = create<ChatStore>()(
                           ? event.timestamp * 1000
                           : sessionResponse.updatedAt
                       ),
-                      artifactDelta: event.actions?.artifactDelta,
+                      artifactDelta,
                       invocationId: event.invocationId,
-                    });
+                    };
+
+                    // デバッグ用: artifactDelta を含むメッセージをログ出力
+                    if (
+                      artifactDelta &&
+                      Object.keys(artifactDelta).length > 0
+                    ) {
+                      console.log('chatStore - Message with artifactDelta:', {
+                        eventId: event.id,
+                        artifactDelta,
+                        invocationId: event.invocationId,
+                        sender,
+                        content: textContent.slice(0, 100) + '...',
+                      });
+                    }
+
+                    messages.push(message);
                   }
                 }
               });
