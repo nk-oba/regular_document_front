@@ -69,8 +69,20 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({
 
         // データURLを作成
         const dataUrl = `data:${mimeType};base64,${standardBase64Data}`;
+
+        console.log('ImagePreview - Image data processed:', {
+          filename,
+          mimeType,
+          originalLength: data.inlineData.data.length,
+          standardLength: standardBase64Data.length,
+          dataUrlLength: dataUrl.length,
+          hasHyphens: data.inlineData.data.includes('-'),
+          hasUnderscores: data.inlineData.data.includes('_'),
+        });
+
         setImageDataUrl(dataUrl);
       } else {
+        console.error('ImagePreview - Invalid response:', data);
         throw new Error('Invalid response format: missing inlineData.data');
       }
     } catch (error) {
@@ -154,23 +166,24 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({
         </div>
       )}
 
-      <div className={loading ? 'hidden' : 'block'}>
-        <img
-          src={imageDataUrl}
-          alt={alt || filename}
-          onLoad={handleImageLoad}
-          onError={handleImageError}
-          onClick={handleImageClick}
-          className={`
-            ${showFullSize ? 'max-w-full' : sizeClass}
-            h-auto rounded-lg shadow-md cursor-pointer
-            transition-all duration-300 hover:shadow-lg
-            border border-gray-200
-          `}
-          style={{
-            maxHeight: showFullSize ? 'none' : '400px',
-          }}
-        />
+      {!loading && imageDataUrl && (
+        <div>
+          <img
+            src={imageDataUrl}
+            alt={alt || filename}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            onClick={handleImageClick}
+            className={`
+              ${showFullSize ? 'max-w-full' : sizeClass}
+              h-auto rounded-lg shadow-md cursor-pointer
+              transition-all duration-300 hover:shadow-lg
+              border border-gray-200
+            `}
+            style={{
+              maxHeight: showFullSize ? 'none' : '400px',
+            }}
+          />
 
         {/* 画像情報とコントロール */}
         <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
@@ -203,7 +216,8 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({
             </a>
           </div>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 };
