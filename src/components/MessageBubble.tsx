@@ -100,6 +100,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     h3: ({ ...props }) => (
                       <h3 className="text-sm font-bold mb-1" {...props} />
                     ),
+                    h4: ({ ...props }) => (
+                      <h4 className="text-sm font-semibold mb-1" {...props} />
+                    ),
+                    h5: ({ ...props }) => (
+                      <h5 className="text-xs font-semibold mb-1" {...props} />
+                    ),
+                    h6: ({ ...props }) => (
+                      <h6 className="text-xs font-medium mb-1" {...props} />
+                    ),
+                    hr: ({ ...props }) => (
+                      <hr
+                        className="my-4 border-t border-gray-300"
+                        {...props}
+                      />
+                    ),
+                    del: ({ ...props }) => (
+                      <del className="line-through text-gray-500" {...props} />
+                    ),
                     p: ({ ...props }) => (
                       <p className="mb-2 last:mb-0" {...props} />
                     ),
@@ -109,16 +127,59 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     ol: ({ ...props }) => (
                       <ol className="list-decimal pl-4 mb-2" {...props} />
                     ),
-                    li: ({ ...props }) => <li className="mb-1" {...props} />,
+                    li: ({ children, ...props }) => {
+                      if (
+                        typeof children === 'object' &&
+                        children &&
+                        'props' in children &&
+                        children.props?.type === 'checkbox'
+                      ) {
+                        return (
+                          <li className="mb-1 flex items-center" {...props}>
+                            <input
+                              type="checkbox"
+                              checked={children.props.checked || false}
+                              disabled
+                              className="mr-2"
+                            />
+                            {children.props.children}
+                          </li>
+                        );
+                      }
+                      return (
+                        <li className="mb-1" {...props}>
+                          {children}
+                        </li>
+                      );
+                    },
+                    input: ({ ...props }) => {
+                      if (props.type === 'checkbox') {
+                        return (
+                          <input
+                            type="checkbox"
+                            checked={props.checked || false}
+                            disabled
+                            className="mr-2 cursor-default"
+                            {...props}
+                          />
+                        );
+                      }
+                      return <input {...props} />;
+                    },
                     code: ({
                       inline,
+                      className,
                       children,
                       ...props
                     }: {
                       inline?: boolean;
+                      className?: string;
                       children?: React.ReactNode;
-                    }) =>
-                      inline ? (
+                    }) => {
+                      const match = /language-(\w+)/.exec(className || '');
+                      const language = match ? match[1] : null;
+
+                      return inline ? (
                         <code
                           className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono"
                           {...props}
@@ -126,13 +187,23 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                           {children}
                         </code>
                       ) : (
-                        <code
-                          className="block bg-gray-100 p-2 rounded text-sm font-mono overflow-x-auto"
-                          {...props}
-                        >
-                          {children}
-                        </code>
-                      ),
+                        <div className="relative">
+                          {language && (
+                            <div className="absolute top-0 right-0 bg-gray-700 text-white text-xs px-2 py-1 rounded-bl">
+                              {language}
+                            </div>
+                          )}
+                          <code
+                            className={`block bg-gray-100 p-2 rounded text-sm font-mono overflow-x-auto ${
+                              className || ''
+                            }`}
+                            {...props}
+                          >
+                            {children}
+                          </code>
+                        </div>
+                      );
+                    },
                     pre: ({ ...props }) => (
                       <pre
                         className="bg-gray-100 p-2 rounded mb-2 overflow-x-auto"
@@ -146,26 +217,46 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       />
                     ),
                     table: ({ ...props }) => (
-                      <table
-                        className="min-w-full border-collapse border border-gray-300 mb-2"
-                        {...props}
-                      />
+                      <div className="overflow-x-auto mb-2">
+                        <table
+                          className="min-w-full border-collapse border border-gray-300"
+                          {...props}
+                        />
+                      </div>
+                    ),
+                    thead: ({ ...props }) => (
+                      <thead className="bg-gray-50" {...props} />
+                    ),
+                    tbody: ({ ...props }) => <tbody {...props} />,
+                    tr: ({ ...props }) => (
+                      <tr className="hover:bg-gray-50" {...props} />
                     ),
                     th: ({ ...props }) => (
                       <th
-                        className="border border-gray-300 px-2 py-1 bg-gray-50 font-semibold"
+                        className="border border-gray-300 px-3 py-2 text-left font-semibold"
                         {...props}
                       />
                     ),
                     td: ({ ...props }) => (
                       <td
-                        className="border border-gray-300 px-2 py-1"
+                        className="border border-gray-300 px-3 py-2"
                         {...props}
                       />
                     ),
-                    a: ({ ...props }) => (
-                      <a className="text-blue-600 hover:underline" {...props} />
-                    ),
+                    a: ({ href, ...props }) => {
+                      const isExternal =
+                        href?.startsWith('http://') ||
+                        href?.startsWith('https://');
+                      return (
+                        <a
+                          href={href}
+                          className="text-blue-600 hover:underline"
+                          target={isExternal ? '_blank' : undefined}
+                          rel={isExternal ? 'noopener noreferrer' : undefined}
+                          {...props}
+                        />
+                      );
+                    },
                     strong: ({ ...props }) => (
                       <strong className="font-bold" {...props} />
                     ),
