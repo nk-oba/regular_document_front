@@ -333,17 +333,10 @@ export const useChatStore = create<ChatStore>()(
           }
 
           try {
-            console.log('📡 Calling API: listSessions...');
             const response = await chatApi.listSessions(appName, userId);
-            console.log('📥 API Response received:', response);
 
             // listSessions は既に sessions 配列を返す
             const sessionResponses = response;
-            logger.info(
-              'API sessions loaded',
-              { count: sessionResponses.length },
-              'ChatStore'
-            );
 
             // APIレスポンスをChatSessionの配列に変換
             const apiSessions: ChatSession[] = sessionResponses.map(

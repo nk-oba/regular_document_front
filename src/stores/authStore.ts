@@ -142,7 +142,11 @@ export const useAuthStore = create<AuthStore>()(
           if (response.ok) {
             logger.info('Logout successful', undefined, 'AuthStore');
           } else {
-            logger.warn('Logout request failed, but continuing with local logout', undefined, 'AuthStore');
+            logger.warn(
+              'Logout request failed, but continuing with local logout',
+              undefined,
+              'AuthStore'
+            );
           }
         } catch (error) {
           logger.error('Logout request failed', error, 'AuthStore');
@@ -220,7 +224,7 @@ export const useAuthStore = create<AuthStore>()(
                 if (currentState.mcpAdaAuth?.authenticated) {
                   clearInterval(pollInterval);
                 }
-              }, 2000);
+              }, 5000);
 
               // Stop polling after 5 minutes
               setTimeout(() => clearInterval(pollInterval), 300000);
